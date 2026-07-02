@@ -29,6 +29,8 @@ jobs:
 
       - run: npm run build
         env:
+          # Matches the GitHub Pages project URL: https://<user>.github.io/<repo>/
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
           # Set these as repo secrets: Settings → Secrets and variables → Actions
           # The anon key is safe to expose publicly — it's meant for the browser
           # and every table is protected by the RLS policies in supabase/migrations/.
