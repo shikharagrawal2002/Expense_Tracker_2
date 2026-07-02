@@ -1,42 +1,49 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
-import {
-  ArrowLeftRight,
-  Wallet,
-  Tags,
-  PiggyBank,
-  Target,
-  Repeat,
-  ReceiptText,
-  LineChart,
-  BarChart3,
-  FileDown,
-  Settings,
-  Landmark,
-} from 'lucide-react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
-import { PlaceholderPage } from '@/app/routes/placeholder-page'
+import { LoginPage } from '@/features/auth/login-page'
+import { SignupPage } from '@/features/auth/signup-page'
+import { RequireAuth } from '@/features/auth/require-auth'
+import { AccountsPage } from '@/features/accounts/accounts-page'
+import { TransactionsPage } from '@/features/transactions/transactions-page'
+import { CategoriesPage } from '@/features/categories/categories-page'
+import { BudgetsPage } from '@/features/budgets/budgets-page'
+import { GoalsPage } from '@/features/goals/goals-page'
+import { SubscriptionsPage } from '@/features/subscriptions/subscriptions-page'
+import { BillsPage } from '@/features/bills/bills-page'
+import { InvestmentsPage } from '@/features/investments/investments-page'
+import { DebtsPage } from '@/features/debts/debts-page'
+import { AnalyticsPage } from '@/features/analytics/analytics-page'
+import { ReportsPage } from '@/features/reports/reports-page'
+import { SettingsPage } from '@/features/settings/settings-page'
 
 const router = createBrowserRouter(
   [
+    { path: '/login', element: <LoginPage /> },
+    { path: '/signup', element: <SignupPage /> },
     {
-      path: '/',
-      element: <AppLayout />,
+      element: <RequireAuth />,
       children: [
-        { index: true, element: <Navigate to="/dashboard" replace /> },
-        { path: 'dashboard', element: <DashboardPage /> },
-        { path: 'transactions', element: <PlaceholderPage title="Transactions" icon={ArrowLeftRight} /> },
-        { path: 'accounts', element: <PlaceholderPage title="Accounts" icon={Wallet} /> },
-        { path: 'categories', element: <PlaceholderPage title="Categories" icon={Tags} /> },
-        { path: 'budgets', element: <PlaceholderPage title="Budgets" icon={PiggyBank} /> },
-        { path: 'goals', element: <PlaceholderPage title="Goals" icon={Target} /> },
-        { path: 'subscriptions', element: <PlaceholderPage title="Subscriptions" icon={Repeat} /> },
-        { path: 'bills', element: <PlaceholderPage title="Bills" icon={ReceiptText} /> },
-        { path: 'investments', element: <PlaceholderPage title="Investments" icon={LineChart} /> },
-        { path: 'debts', element: <PlaceholderPage title="Debts" icon={Landmark} /> },
-        { path: 'analytics', element: <PlaceholderPage title="Analytics" icon={BarChart3} /> },
-        { path: 'reports', element: <PlaceholderPage title="Reports" icon={FileDown} /> },
-        { path: 'settings', element: <PlaceholderPage title="Settings" icon={Settings} /> },
+        {
+          path: '/',
+          element: <AppLayout />,
+          children: [
+            { index: true, element: <Navigate to="/dashboard" replace /> },
+            { path: 'dashboard', element: <DashboardPage /> },
+            { path: 'transactions', element: <TransactionsPage /> },
+            { path: 'accounts', element: <AccountsPage /> },
+            { path: 'categories', element: <CategoriesPage /> },
+            { path: 'budgets', element: <BudgetsPage /> },
+            { path: 'goals', element: <GoalsPage /> },
+            { path: 'subscriptions', element: <SubscriptionsPage /> },
+            { path: 'bills', element: <BillsPage /> },
+            { path: 'investments', element: <InvestmentsPage /> },
+            { path: 'debts', element: <DebtsPage /> },
+            { path: 'analytics', element: <AnalyticsPage /> },
+            { path: 'reports', element: <ReportsPage /> },
+            { path: 'settings', element: <SettingsPage /> },
+          ],
+        },
       ],
     },
   ],
