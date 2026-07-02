@@ -5,6 +5,8 @@ import '@/styles/index.css'
 import { ThemeProvider } from '@/lib/hooks/useTheme'
 import { AuthProvider } from '@/features/auth/use-auth'
 import { AppRouter } from '@/app/AppRouter'
+import { ConfigMissingScreen } from '@/app/routes/config-missing-screen'
+import { isSupabaseConfigured } from '@/lib/supabase/client'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,12 +19,16 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppRouter />
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    {isSupabaseConfigured ? (
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppRouter />
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    ) : (
+      <ConfigMissingScreen />
+    )}
   </StrictMode>,
 )
