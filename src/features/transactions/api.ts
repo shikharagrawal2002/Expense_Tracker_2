@@ -8,7 +8,8 @@ export interface TransactionFilters {
   type?: Transaction['type']
 }
 
-const SELECT_WITH_JOINS = '*, account:accounts(id,name,color,icon), category:categories(id,name,color,icon)'
+const SELECT_WITH_JOINS =
+  '*, account:accounts!transactions_account_id_fkey(id,name,color,icon), category:categories(id,name,color,icon)'
 
 export async function fetchTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
   let query = supabase.from('transactions').select(SELECT_WITH_JOINS).order('occurred_at', { ascending: false }).limit(100)
