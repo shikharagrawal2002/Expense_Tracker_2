@@ -4,12 +4,25 @@ import { BudgetStatusList } from '@/features/dashboard/components/budget-status-
 import { UpcomingBillsCard } from '@/features/dashboard/components/upcoming-bills-card'
 import { RecentActivityList } from '@/features/dashboard/components/recent-activity-list'
 import { AiInsightsPanel } from '@/features/dashboard/components/ai-insights-panel'
+import { useAuth } from '@/features/auth/use-auth'
+
+function timeOfDayGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+}
 
 export function DashboardPage() {
+  const { user } = useAuth()
+  const firstName = (user?.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? user?.email?.split('@')[0]
+
   return (
     <div className="space-y-5 max-w-[1400px]">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Good evening, Aarav</h1>
+        <h1 className="font-display text-2xl font-semibold">
+          {timeOfDayGreeting()}{firstName ? `, ${firstName}` : ''}
+        </h1>
         <p className="text-sm text-muted mt-0.5">Here's where your money stands today.</p>
       </div>
 

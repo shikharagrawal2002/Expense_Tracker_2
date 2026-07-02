@@ -1,17 +1,30 @@
 import { TrendingUp, TrendingDown, CreditCard, Activity } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressRing } from '@/components/ui/progress-ring'
+import { Skeleton } from '@/components/ui/skeleton'
 import { formatCompactCurrency, cn } from '@/lib/utils'
-import { mockKpis } from '@/features/dashboard/mock-data'
+import { useDashboardKpis } from '@/features/dashboard/use-dashboard-data'
 
 export function KpiRow() {
-  const { netWorth, netWorthChangePct, savingsRate, creditUtilization, healthScore } = mockKpis
-  const isPositiveChange = netWorthChangePct >= 0
+  const { data, isLoading } = useDashboardKpis()
+
+  if (isLoading || !data) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-32 rounded-2xl" />
+        ))}
+      </div>
+    )
+  }
+
+  const { netWorth, currentMonthNet, savingsRate, creditUtilization, healthScore } = data
+  const isPositiveNet = currentMonthNet >= 0
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {/* Financial health score — signature ring, larger emphasis */}
-      <Card className="xl:row-span-1">
+      <Card>
         <CardContent className="pt-5 flex items-center gap-4">
           <ProgressRing
             value={healthScore}
@@ -23,7 +36,9 @@ export function KpiRow() {
           </ProgressRing>
           <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted">Health score</p>
-            <p className="text-sm mt-1 text-muted">Good and improving</p>
+            <p className="text-sm mt-1 text-muted">
+              {healthScore >= 70 ? 'Good shape' : healthScore >= 40 ? 'Room to improve' : 'Needs attention'}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -35,15 +50,15 @@ export function KpiRow() {
             <div
               className={cn(
                 'flex items-center gap-0.5 text-xs font-medium',
-                isPositiveChange ? 'text-[var(--color-positive-600)]' : 'text-[var(--color-negative-600)]',
+                isPositiveNet ? 'text-[var(--color-positive-600)]' : 'text-[var(--color-negative-600)]',
               )}
             >
-              {isPositiveChange ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {Math.abs(netWorthChangePct)}%
+              {isPositiveNet ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              {formatCompactCurrency(Math.abs(currentMonthNet))}
             </div>
           </div>
           <p className="font-display text-2xl font-semibold mt-2 num">{formatCompactCurrency(netWorth)}</p>
-          <p className="text-xs text-muted mt-1">vs last month</p>
+          <p className="text-xs text-muted mt-1">{isPositiveNet ? 'net gain' : 'net loss'} this month</p>
         </CardContent>
       </Card>
 
@@ -57,7 +72,7 @@ export function KpiRow() {
           <div className="h-1.5 rounded-full surface-2 mt-3 overflow-hidden">
             <div
               className="h-full rounded-full bg-[var(--color-positive-500)]"
-              style={{ width: `${savingsRate}%` }}
+              style={{ width: `${Math.min(100, Math.max(0, savingsRate))}%` }}
             />
           </div>
         </CardContent>
