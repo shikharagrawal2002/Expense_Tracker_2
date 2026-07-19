@@ -7,6 +7,7 @@ import { RequireAuth } from '@/features/auth/require-auth'
 import { AccountsPage } from '@/features/accounts/accounts-page'
 import { TransactionsPage } from '@/features/transactions/transactions-page'
 import { CategoriesPage } from '@/features/categories/categories-page'
+import { ImportsPage } from '@/features/imports/imports-page'
 import { BudgetsPage } from '@/features/budgets/budgets-page'
 import { GoalsPage } from '@/features/goals/goals-page'
 import { SubscriptionsPage } from '@/features/subscriptions/subscriptions-page'
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
             { path: 'transactions', element: <TransactionsPage /> },
             { path: 'accounts', element: <AccountsPage /> },
             { path: 'categories', element: <CategoriesPage /> },
+            { path: 'imports', element: <ImportsPage /> },
             { path: 'budgets', element: <BudgetsPage /> },
             { path: 'goals', element: <GoalsPage /> },
             { path: 'subscriptions', element: <SubscriptionsPage /> },

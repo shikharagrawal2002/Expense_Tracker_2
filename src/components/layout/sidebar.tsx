@@ -14,6 +14,7 @@ import {
   Settings,
   Landmark,
   Sparkles,
+  UploadCloud,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +32,7 @@ const NAV_SECTIONS = [
       { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
       { to: '/accounts', label: 'Accounts', icon: Wallet },
       { to: '/categories', label: 'Categories', icon: Tags },
+      { to: '/imports', label: 'Import statements', icon: UploadCloud },
     ],
   },
   {
