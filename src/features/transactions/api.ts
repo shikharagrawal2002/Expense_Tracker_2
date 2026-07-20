@@ -13,7 +13,7 @@ export interface TransactionFilters {
 }
 
 const SELECT_WITH_JOINS =
-  '*, account:accounts!transactions_account_id_fkey(id,name,color,icon), category:categories(id,name,color,icon)'
+  '*, account:accounts!transactions_account_id_fkey(id,name,color,icon), transfer_account:accounts!transactions_transfer_account_id_fkey(id,name,color,icon), category:categories(id,name,color,icon)'
 
 export async function fetchTransactions(filters: TransactionFilters = {}): Promise<Transaction[]> {
   let query = supabase
