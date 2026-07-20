@@ -32,6 +32,9 @@ export function TransactionRow({ txn, viewAccountId }: TransactionRowProps) {
 
   const subtitleDate = new Date(txn.occurred_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 
+  const isSourceView = txn.type === 'transfer' && viewAccountId && txn.account_id === viewAccountId
+  const isDestinationView = txn.type === 'transfer' && viewAccountId && txn.transfer_account_id === viewAccountId
+
   return (
     <div className="group flex items-center gap-3 rounded-lg px-2 py-2.5 -mx-2 hover:surface-2 transition-colors">
       <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center" style={{ backgroundColor: `${color}26` }}>
@@ -44,7 +47,11 @@ export function TransactionRow({ txn, viewAccountId }: TransactionRowProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{txn.category?.name ?? (txn.type === 'transfer' ? 'Transfer' : 'Uncategorized')}</p>
         <p className="text-xs text-muted truncate flex items-center gap-1">
-          {txn.type === 'transfer' ? (
+          {txn.type === 'transfer' && isSourceView ? (
+            <span className="truncate">To {txn.transfer_account?.name ?? 'Unknown'} · {subtitleDate}</span>
+          ) : txn.type === 'transfer' && isDestinationView ? (
+            <span className="truncate">From {txn.account?.name ?? 'Unknown'} · {subtitleDate}</span>
+          ) : txn.type === 'transfer' ? (
             <>
               <span className="truncate">{txn.account?.name ?? 'Unknown'}</span>
               <ArrowRight className="h-3 w-3 shrink-0" />
