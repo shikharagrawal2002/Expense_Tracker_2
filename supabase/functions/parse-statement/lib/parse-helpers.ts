@@ -4,8 +4,9 @@ const MONTHS: Record<string, string> = {
 }
 
 /** Parses the handful of date formats Indian bank/card statements actually use
- *  (DD/MM/YYYY, DD-MM-YYYY, DD-Mon-YYYY, DD Mon YYYY, YYYY-MM-DD) into ISO yyyy-mm-dd.
- *  Returns null rather than throwing, so callers can just skip unparsable lines. */
+ *  (DD/MM/YYYY, DD-MM-YYYY, DD-Mon-YYYY, DD Mon YYYY, YYYY-MM-DD, DDMonYYYY) into
+ *  ISO yyyy-mm-dd. Returns null rather than throwing, so callers can just skip
+ *  unparsable lines. */
 export function parseStatementDate(raw: string): string | null {
   const value = raw.trim().replace(/['â€™]/g, '')
   if (!value) return null
@@ -15,16 +16,12 @@ export function parseStatementDate(raw: string): string | null {
   if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
 
   // dd/mm/yyyy or dd-mm-yyyy or dd.mm.yyyy (also accepts 2-digit year)
-// ddMonyyyy with NO separators at all, e.g. "14Jun2026" (seen in HSBC exports)
-  m = value.match(/^(\d{1,2})([A-Za-z]{3})(\d{4})$/)
+  m = value.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/)
   if (m) {
-    const mon = MONTHS[m[2].toLowerCase()]
-    if (!mon) return null
-    return `${m[3]}-${mon}-${m[1].padStart(2, '0')}`
+    let year = m[3]
+    if (year.length === 2) year = Number(year) > 50 ? `19${year}` : `20${year}`
+    return `${year}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
   }
-
-  return null
-}
 
   // dd-Mon-yyyy / dd Mon yyyy / dd-Mon-yy / dd-Mon'yy (the apostrophe-year style
   // Indian statements commonly use, e.g. "02-Jul'25")
@@ -35,6 +32,14 @@ export function parseStatementDate(raw: string): string | null {
     let year = m[3]
     if (year.length === 2) year = `20${year}`
     return `${year}-${mon}-${m[1].padStart(2, '0')}`
+  }
+
+  // ddMonyyyy with NO separators at all, e.g. "14Jun2026" (seen in HSBC exports)
+  m = value.match(/^(\d{1,2})([A-Za-z]{3})(\d{4})$/)
+  if (m) {
+    const mon = MONTHS[m[2].toLowerCase()]
+    if (!mon) return null
+    return `${m[3]}-${mon}-${m[1].padStart(2, '0')}`
   }
 
   return null
