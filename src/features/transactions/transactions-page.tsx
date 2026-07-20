@@ -172,9 +172,18 @@ export function TransactionsPage() {
 
           {!isLoading && transactions && transactions.length > 0 && (
             <div className="divide-y divide-[var(--color-border-light)] dark:divide-[var(--color-border-dark)]">
-              {transactions.map((txn) => (
-  <TransactionRow key={txn.id} txn={txn} viewAccountId={accountId || undefined} />
-))}
+              {transactions.flatMap((txn) => {
+                if (accountId) {
+                  return [<TransactionRow key={txn.id} txn={txn} viewAccountId={accountId} />]
+                }
+                if (txn.type === 'transfer' && txn.transfer_account_id) {
+                  return [
+                    <TransactionRow key={`${txn.id}-out`} txn={txn} viewAccountId={txn.account_id} />,
+                    <TransactionRow key={`${txn.id}-in`} txn={txn} viewAccountId={txn.transfer_account_id} />,
+                  ]
+                }
+                return [<TransactionRow key={txn.id} txn={txn} />]
+              })}
             </div>
           )}
         </CardContent>
