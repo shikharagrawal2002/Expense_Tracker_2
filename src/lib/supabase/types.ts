@@ -61,6 +61,7 @@ export interface Transaction {
   updated_at: string
   // convenience joins, populated by the API layer's select() when available
   account?: Pick<Account, 'id' | 'name' | 'color' | 'icon'>
+  transfer_account?: Pick<Account, 'id' | 'name' | 'color' | 'icon'>
   category?: Pick<Category, 'id' | 'name' | 'color' | 'icon'>
 }
 
