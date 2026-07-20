@@ -12,14 +12,32 @@ import { useAccounts } from '@/features/accounts/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { useCreateTransaction } from '@/features/transactions/hooks'
 
-const schema = z.object({
-  type: z.enum(['income', 'expense', 'transfer']),
-  account_id: z.string().min(1, 'Select an account'),
-  category_id: z.string().optional(),
-  amount: z.coerce.number().positive('Amount must be greater than 0'),
-  occurred_at: z.string().min(1),
-  notes: z.string().optional(),
-})
+const schema = z
+  .object({
+    type: z.enum(['income', 'expense', 'transfer']),
+    account_id: z.string().min(1, 'Select an account'),
+    transfer_account_id: z.string().optional(),
+    category_id: z.string().optional(),
+    amount: z.coerce.number().positive('Amount must be greater than 0'),
+    occurred_at: z.string().min(1),
+    notes: z.string().optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.type !== 'transfer') return
+    if (!values.transfer_account_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['transfer_account_id'],
+        message: 'Select the destination account',
+      })
+    } else if (values.transfer_account_id === values.account_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['transfer_account_id'],
+        message: 'Destination must be different from the source account',
+      })
+    }
+  })
 type FormInput = z.input<typeof schema>
 type FormValues = z.output<typeof schema>
 
@@ -41,6 +59,7 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
     control,
     watch,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
@@ -51,12 +70,14 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
   })
 
   const type = watch('type')
+  const sourceAccountId = watch('account_id')
   const relevantCategories = categories?.filter((c) => c.kind === type)
 
   const onSubmit = async (values: FormValues) => {
     await createTransaction.mutateAsync({
       ...values,
       category_id: values.category_id || undefined,
+      transfer_account_id: values.type === 'transfer' ? values.transfer_account_id : undefined,
       occurred_at: new Date(values.occurred_at).toISOString(),
     })
     reset()
@@ -75,16 +96,19 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
               <div className="grid grid-cols-3 gap-1.5 surface-2 rounded-lg p-1">
                 {TYPE_TABS.map((tab) => (
                   <button
-                    type="button"
-                    key={tab.value}
-                    onClick={() => field.onChange(tab.value)}
-                    className={cn(
-                      'rounded-md py-1.5 text-sm font-medium transition-colors',
-                      field.value === tab.value ? 'surface shadow-sm' : 'text-muted',
-                    )}
-                  >
-                    {tab.label}
-                  </button>
+                  type="button"
+                  key={tab.value}
+                  onClick={() => {
+                    field.onChange(tab.value)
+                    if (tab.value !== 'transfer') setValue('transfer_account_id', '')
+                  }}
+                  className={cn(
+                    'rounded-md py-1.5 text-sm font-medium transition-colors',
+                    field.value === tab.value ? 'surface shadow-sm' : 'text-muted',
+                  )}
+                >
+                  {tab.label}
+                </button>
                 ))}
               </div>
             )}
@@ -97,7 +121,7 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
           </div>
 
           <div>
-            <Label htmlFor="account_id">Account</Label>
+            <Label htmlFor="account_id">{type === 'transfer' ? 'From account' : 'Account'}</Label>
             <Select id="account_id" {...register('account_id')}>
               <option value="">Select account…</option>
               {accounts?.map((a) => (
@@ -108,6 +132,23 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
             </Select>
             <FormError message={errors.account_id?.message} />
           </div>
+
+          {type === 'transfer' && (
+            <div>
+              <Label htmlFor="transfer_account_id">To account</Label>
+              <Select id="transfer_account_id" {...register('transfer_account_id')}>
+                <option value="">Select account…</option>
+                {accounts
+                  ?.filter((a) => a.id !== sourceAccountId)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+              </Select>
+              <FormError message={errors.transfer_account_id?.message} />
+            </div>
+          )}
 
           {type !== 'transfer' && (
             <div>
