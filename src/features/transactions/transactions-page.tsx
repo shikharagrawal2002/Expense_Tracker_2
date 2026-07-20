@@ -173,8 +173,8 @@ export function TransactionsPage() {
           {!isLoading && transactions && transactions.length > 0 && (
             <div className="divide-y divide-[var(--color-border-light)] dark:divide-[var(--color-border-dark)]">
               {transactions.map((txn) => (
-                <TransactionRow key={txn.id} txn={txn} />
-              ))}
+  <TransactionRow key={txn.id} txn={txn} viewAccountId={accountId || undefined} />
+))}
             </div>
           )}
         </CardContent>
