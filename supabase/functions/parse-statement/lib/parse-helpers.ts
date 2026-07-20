@@ -15,12 +15,16 @@ export function parseStatementDate(raw: string): string | null {
   if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`
 
   // dd/mm/yyyy or dd-mm-yyyy or dd.mm.yyyy (also accepts 2-digit year)
-  m = value.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/)
+// ddMonyyyy with NO separators at all, e.g. "14Jun2026" (seen in HSBC exports)
+  m = value.match(/^(\d{1,2})([A-Za-z]{3})(\d{4})$/)
   if (m) {
-    let year = m[3]
-    if (year.length === 2) year = Number(year) > 50 ? `19${year}` : `20${year}`
-    return `${year}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+    const mon = MONTHS[m[2].toLowerCase()]
+    if (!mon) return null
+    return `${m[3]}-${mon}-${m[1].padStart(2, '0')}`
   }
+
+  return null
+}
 
   // dd-Mon-yyyy / dd Mon yyyy / dd-Mon-yy / dd-Mon'yy (the apostrophe-year style
   // Indian statements commonly use, e.g. "02-Jul'25")
