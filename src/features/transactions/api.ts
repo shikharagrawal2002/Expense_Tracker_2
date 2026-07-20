@@ -22,7 +22,14 @@ export async function fetchTransactions(filters: TransactionFilters = {}): Promi
     .order('occurred_at', { ascending: false })
     .limit(500)
 
-  if (filters.accountId) query = query.eq('account_id', filters.accountId)
+  // Matches account_id (the source of every income/expense/transfer, and the
+  // destination for non-transfers where transfer_account_id is null) OR
+  // transfer_account_id (the destination side of a transfer) — so filtering by
+  // an account shows transfers where that account was either side, not just
+  // the source.
+  if (filters.accountId) {
+    query = query.or(`account_id.eq.${filters.accountId},transfer_account_id.eq.${filters.accountId}`)
+  }
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId)
   if (filters.type) query = query.eq('type', filters.type)
   if (filters.search) query = query.ilike('notes', `%${filters.search}%`)
