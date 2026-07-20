@@ -1,5 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchTransactions, createTransaction, deleteTransaction, type TransactionFilters } from '@/features/transactions/api'
+import {
+  fetchTransactions,
+  createTransaction,
+  editTransaction,
+  deleteTransaction,
+  fetchBalanceAsOf,
+  type TransactionFilters,
+  type EditTransactionInput,
+} from '@/features/transactions/api'
 import type { NewTransaction } from '@/lib/supabase/types'
 
 export function useTransactions(filters: TransactionFilters = {}) {
@@ -20,6 +28,18 @@ export function useCreateTransaction() {
   })
 }
 
+export function useEditTransaction() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (input: EditTransactionInput) => editTransaction(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['balance-as-of'] })
+    },
+  })
+}
+
 export function useDeleteTransaction() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -27,6 +47,17 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
+      queryClient.invalidateQueries({ queryKey: ['balance-as-of'] })
     },
+  })
+}
+
+/** The closing balance as of the end of `asOfDate` (yyyy-mm-dd), for the given
+ *  account or, if omitted, combined across all accounts. */
+export function useBalanceAsOf(accountId: string | undefined, asOfDate: string | undefined) {
+  return useQuery({
+    queryKey: ['balance-as-of', accountId ?? 'all', asOfDate],
+    queryFn: () => fetchBalanceAsOf(accountId, asOfDate as string),
+    enabled: !!asOfDate,
   })
 }

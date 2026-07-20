@@ -10,6 +10,16 @@
 //
 // Required secrets (set automatically for you on Supabase-hosted projects):
 //   SUPABASE_URL, SUPABASE_ANON_KEY
+// Some npm dependencies (xlsx, and unpdf's pdf.js internals) assume `Buffer`
+// exists as a Node-style global, even though this runtime doesn't provide one
+// automatically the way Node does. Without this, those libraries throw
+// "Buffer is not defined" the moment they touch binary data. This must run
+// before any other import below, in case a dependency touches Buffer at its
+// own module-load time rather than only when actually invoked.
+import { Buffer } from 'node:buffer'
+// @ts-ignore -- intentionally patching the global for dependencies that expect it
+globalThis.Buffer = Buffer
+
 import { corsHeaders, jsonResponse } from './lib/cors.ts'
 import { extractContent } from './lib/extract-rows.ts'
 import { parseBankStatement } from './lib/bank-parsers.ts'

@@ -1,6 +1,13 @@
 import * as XLSX from 'npm:xlsx@0.18.5'
-// pdf-parse's default export works fine under Deno's npm compat layer.
-import pdfParse from 'npm:pdf-parse@1.1.1'
+// IMPORTANT: don't use `pdf-parse` here — it's Node-only and, on import, tries to
+// synchronously read a test fixture off disk (a leftover debug code path in the
+// package). That file doesn't exist in the deployed function bundle, so it throws
+// at *module load time* — before Deno.serve even registers — which crashes every
+// request the function gets, including CORS preflights (that's what shows up in
+// the browser as a confusing "CORS policy" error). `unpdf` is built specifically
+// for edge/serverless runtimes (Cloudflare Workers, Vercel Edge, Deno) with no
+// Node fs dependency, so it doesn't have this problem.
+import { extractText, getDocumentProxy } from 'npm:unpdf@1.4.0'
 import type { ExtractedContent } from './types.ts'
 
 function isSpreadsheet(fileName: string, mimeType: string) {
@@ -79,8 +86,9 @@ export async function extractContent(
   }
 
   if (isPdf(fileName, mimeType)) {
-    const result = await pdfParse(Buffer.from(bytes))
-    const lines = String(result.text)
+    const pdf = await getDocumentProxy(bytes)
+    const { text } = await extractText(pdf, { mergePages: true })
+    const lines = String(text)
       .split(/\r\n|\r|\n/)
       .map((l) => l.trim())
       .filter((l) => l.length > 0)

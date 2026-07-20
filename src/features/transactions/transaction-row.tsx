@@ -1,6 +1,7 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, Pencil } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useDeleteTransaction } from '@/features/transactions/hooks'
+import { TransactionFormDialog } from '@/features/transactions/transaction-form-dialog'
 import type { Transaction } from '@/lib/supabase/types'
 
 export function TransactionRow({ txn }: { txn: Transaction }) {
@@ -29,13 +30,26 @@ export function TransactionRow({ txn }: { txn: Transaction }) {
         {signedAmount > 0 ? '+' : ''}
         {formatCurrency(signedAmount, txn.currency)}
       </p>
-      <button
-        onClick={() => deleteTransaction.mutate(txn.id)}
-        className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 hover:bg-[var(--color-negative-500)]/10 text-muted hover:text-[var(--color-negative-600)] transition-all shrink-0"
-        aria-label="Delete transaction"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <TransactionFormDialog
+          transaction={txn}
+          trigger={
+            <button
+              className="rounded-lg p-1.5 hover:surface text-muted hover:text-inherit transition-colors"
+              aria-label="Edit transaction"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          }
+        />
+        <button
+          onClick={() => deleteTransaction.mutate(txn.id)}
+          className="rounded-lg p-1.5 hover:bg-[var(--color-negative-500)]/10 text-muted hover:text-[var(--color-negative-600)] transition-colors"
+          aria-label="Delete transaction"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
   )
 }

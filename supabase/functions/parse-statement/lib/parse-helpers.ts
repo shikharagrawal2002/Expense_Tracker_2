@@ -22,8 +22,9 @@ export function parseStatementDate(raw: string): string | null {
     return `${year}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
   }
 
-  // dd-Mon-yyyy / dd Mon yyyy / dd-Mon-yy
-  m = value.match(/^(\d{1,2})[\s\-](\w{3,})[\s\-,]+'?(\d{2,4})$/)
+  // dd-Mon-yyyy / dd Mon yyyy / dd-Mon-yy / dd-Mon'yy (the apostrophe-year style
+  // Indian statements commonly use, e.g. "02-Jul'25")
+  m = value.match(/^(\d{1,2})[\s\-](\w{3,})[\s\-,']+(\d{2,4})$/)
   if (m) {
     const mon = MONTHS[m[2].slice(0, 3).toLowerCase()]
     if (!mon) return null

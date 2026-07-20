@@ -1,22 +1,40 @@
-import { useState } from 'react'
-import { Plus, ArrowLeftRight, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, ArrowLeftRight, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
 import { Card, CardContent } from '@/components/ui/card'
-import { useTransactions } from '@/features/transactions/hooks'
+import { formatCurrency } from '@/lib/utils'
+import { useTransactions, useBalanceAsOf } from '@/features/transactions/hooks'
 import { useAccounts } from '@/features/accounts/hooks'
 import { TransactionRow } from '@/features/transactions/transaction-row'
 import { TransactionFormDialog } from '@/features/transactions/transaction-form-dialog'
+import { getCalendarMonthRange, getStatementCycleRange, shiftMonth, type DateRangePreset } from '@/features/transactions/date-range'
 import type { Transaction } from '@/lib/supabase/types'
 
 export function TransactionsPage() {
   const [search, setSearch] = useState('')
   const [accountId, setAccountId] = useState('')
   const [type, setType] = useState<Transaction['type'] | ''>('')
+  const [datePreset, setDatePreset] = useState<DateRangePreset>('all')
+  const [cycleReference, setCycleReference] = useState(() => new Date())
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
 
   const { data: accounts } = useAccounts()
+
+  const calendarMonth = useMemo(() => getCalendarMonthRange(cycleReference), [cycleReference])
+  const statementCycle = useMemo(() => getStatementCycleRange(cycleReference), [cycleReference])
+
+  const { dateFrom, dateTo } = useMemo(() => {
+    if (datePreset === 'this-month') return { dateFrom: calendarMonth.start, dateTo: calendarMonth.end }
+    if (datePreset === 'cycle') return { dateFrom: statementCycle.start, dateTo: statementCycle.end }
+    if (datePreset === 'custom') return { dateFrom: customFrom || undefined, dateTo: customTo || undefined }
+    return { dateFrom: undefined, dateTo: undefined }
+  }, [datePreset, calendarMonth, statementCycle, customFrom, customTo])
+
   const {
     data: transactions,
     isLoading,
@@ -25,7 +43,16 @@ export function TransactionsPage() {
     search: search || undefined,
     accountId: accountId || undefined,
     type: type || undefined,
+    dateFrom,
+    dateTo,
   })
+
+  // "Previous month final balance": the closing balance as of the start of the
+  // statement cycle (which is, by definition, the last day of the previous month).
+  const { data: previousMonthBalance } = useBalanceAsOf(
+    accountId || undefined,
+    datePreset === 'cycle' ? statementCycle.start : undefined,
+  )
 
   return (
     <div className="max-w-[1000px] space-y-5">
@@ -65,7 +92,53 @@ export function TransactionsPage() {
             </option>
           ))}
         </Select>
+        <Select
+          value={datePreset}
+          onChange={(e) => setDatePreset(e.target.value as DateRangePreset)}
+          className="sm:w-44"
+        >
+          <option value="all">All time</option>
+          <option value="this-month">This month</option>
+          <option value="cycle">Monthly (statement cycle)</option>
+          <option value="custom">Custom range</option>
+        </Select>
       </div>
+
+      {(datePreset === 'this-month' || datePreset === 'cycle') && (
+        <div className="flex items-center gap-2 text-sm">
+          <button
+            onClick={() => setCycleReference((d) => shiftMonth(d, -1))}
+            className="rounded-lg p-1.5 hover:surface-2 text-muted"
+            aria-label="Previous month"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="font-medium min-w-[180px] text-center">
+            {datePreset === 'cycle' ? statementCycle.label : calendarMonth.label}
+          </span>
+          <button
+            onClick={() => setCycleReference((d) => shiftMonth(d, 1))}
+            className="rounded-lg p-1.5 hover:surface-2 text-muted"
+            aria-label="Next month"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {datePreset === 'cycle' && previousMonthBalance !== undefined && (
+            <span className="ml-2 text-muted">
+              Previous month final balance:{' '}
+              <span className="font-medium text-inherit">{formatCurrency(previousMonthBalance)}</span>
+            </span>
+          )}
+        </div>
+      )}
+
+      {datePreset === 'custom' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="sm:w-44" />
+          <span className="text-sm text-muted">to</span>
+          <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="sm:w-44" />
+        </div>
+      )}
 
       <Card>
         <CardContent className="pt-4">
@@ -90,7 +163,7 @@ export function TransactionsPage() {
               icon={ArrowLeftRight}
               title="No transactions found"
               description={
-                search || accountId || type
+                search || accountId || type || datePreset !== 'all'
                   ? 'Try adjusting your filters.'
                   : 'Add your first transaction to start building your history.'
               }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,7 +10,8 @@ import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { useAccounts } from '@/features/accounts/hooks'
 import { useCategories } from '@/features/categories/hooks'
-import { useCreateTransaction } from '@/features/transactions/hooks'
+import { useCreateTransaction, useEditTransaction } from '@/features/transactions/hooks'
+import type { Transaction } from '@/lib/supabase/types'
 
 const schema = z
   .object({
@@ -47,11 +48,39 @@ const TYPE_TABS = [
   { value: 'transfer', label: 'Transfer' },
 ] as const
 
-export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode }) {
+const emptyDefaults = (): FormInput => ({
+  type: 'expense',
+  account_id: '',
+  transfer_account_id: '',
+  category_id: '',
+  amount: undefined as unknown as number,
+  occurred_at: new Date().toISOString().slice(0, 16),
+  notes: '',
+})
+
+const defaultsFromTransaction = (txn: Transaction): FormInput => ({
+  type: txn.type,
+  account_id: txn.account_id,
+  transfer_account_id: txn.transfer_account_id ?? '',
+  category_id: txn.category_id ?? '',
+  amount: txn.amount,
+  occurred_at: new Date(txn.occurred_at).toISOString().slice(0, 16),
+  notes: txn.notes ?? '',
+})
+
+interface TransactionFormDialogProps {
+  trigger: React.ReactNode
+  /** When provided, the dialog edits this transaction instead of creating a new one. */
+  transaction?: Transaction
+}
+
+export function TransactionFormDialog({ trigger, transaction }: TransactionFormDialogProps) {
   const [open, setOpen] = useState(false)
+  const isEditing = !!transaction
   const { data: accounts } = useAccounts()
   const { data: categories } = useCategories()
   const createTransaction = useCreateTransaction()
+  const editTransaction = useEditTransaction()
 
   const {
     register,
@@ -63,31 +92,43 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
     formState: { errors, isSubmitting },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      type: 'expense',
-      occurred_at: new Date().toISOString().slice(0, 16),
-    },
+    defaultValues: emptyDefaults(),
   })
+
+  // Re-populate the form whenever the dialog opens, either with the
+  // transaction being edited or a blank slate for a new one.
+  useEffect(() => {
+    if (!open) return
+    reset(transaction ? defaultsFromTransaction(transaction) : emptyDefaults())
+  }, [open, transaction, reset])
 
   const type = watch('type')
   const sourceAccountId = watch('account_id')
   const relevantCategories = categories?.filter((c) => c.kind === type)
 
   const onSubmit = async (values: FormValues) => {
-    await createTransaction.mutateAsync({
-      ...values,
-      category_id: values.category_id || undefined,
+    const shared = {
+      account_id: values.account_id,
       transfer_account_id: values.type === 'transfer' ? values.transfer_account_id : undefined,
+      category_id: values.category_id || undefined,
+      type: values.type,
+      amount: values.amount,
       occurred_at: new Date(values.occurred_at).toISOString(),
-    })
-    reset()
+      notes: values.notes || undefined,
+    }
+
+    if (isEditing && transaction) {
+      await editTransaction.mutateAsync({ id: transaction.id, ...shared })
+    } else {
+      await createTransaction.mutateAsync(shared)
+    }
     setOpen(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent title="Add transaction">
+      <DialogContent title={isEditing ? 'Edit transaction' : 'Add transaction'}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Controller
             control={control}
@@ -96,19 +137,19 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
               <div className="grid grid-cols-3 gap-1.5 surface-2 rounded-lg p-1">
                 {TYPE_TABS.map((tab) => (
                   <button
-                  type="button"
-                  key={tab.value}
-                  onClick={() => {
-                    field.onChange(tab.value)
-                    if (tab.value !== 'transfer') setValue('transfer_account_id', '')
-                  }}
-                  className={cn(
-                    'rounded-md py-1.5 text-sm font-medium transition-colors',
-                    field.value === tab.value ? 'surface shadow-sm' : 'text-muted',
-                  )}
-                >
-                  {tab.label}
-                </button>
+                    type="button"
+                    key={tab.value}
+                    onClick={() => {
+                      field.onChange(tab.value)
+                      if (tab.value !== 'transfer') setValue('transfer_account_id', '')
+                    }}
+                    className={cn(
+                      'rounded-md py-1.5 text-sm font-medium transition-colors',
+                      field.value === tab.value ? 'surface shadow-sm' : 'text-muted',
+                    )}
+                  >
+                    {tab.label}
+                  </button>
                 ))}
               </div>
             )}
@@ -176,7 +217,7 @@ export function TransactionFormDialog({ trigger }: { trigger: React.ReactNode })
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Add transaction
+            {isEditing ? 'Save changes' : 'Add transaction'}
           </Button>
         </form>
       </DialogContent>
