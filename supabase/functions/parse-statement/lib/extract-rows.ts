@@ -62,6 +62,7 @@ export async function extractContent(
   fileName: string,
   mimeType: string,
   bytes: Uint8Array,
+  password?: string,
 ): Promise<ExtractedContent> {
   if (isCsv(fileName, mimeType)) {
     const text = new TextDecoder('utf-8').decode(bytes)
@@ -69,7 +70,7 @@ export async function extractContent(
   }
 
   if (isSpreadsheet(fileName, mimeType)) {
-    const workbook = XLSX.read(bytes, { type: 'array' })
+    const workbook = XLSX.read(bytes, { type: 'array', password })
     // Statements almost always have one meaningful sheet; if there are several,
     // use the one with the most non-empty rows (biggest table = the transaction list).
     let bestRows: string[][] = []
@@ -86,7 +87,23 @@ export async function extractContent(
   }
 
   if (isPdf(fileName, mimeType)) {
-    const pdf = await getDocumentProxy(bytes)
+    let pdf
+    try {
+      pdf = await getDocumentProxy(bytes, password ? { password } : undefined)
+    } catch (err) {
+      // pdf.js throws a distinct error whose message says "password" for both
+      // "this PDF needs one" and "the one you gave was wrong" — surface a
+      // clear, actionable message either way rather than a generic parse failure.
+      const message = err instanceof Error ? err.message : String(err)
+      if (/password/i.test(message)) {
+        throw new Error(
+          password
+            ? 'That password did not unlock this PDF. Double-check it and try again.'
+            : 'This PDF is password-protected. Enter its password and try again.',
+        )
+      }
+      throw err
+    }
     const { text } = await extractText(pdf, { mergePages: true })
     const lines = String(text)
       .split(/\r\n|\r|\n/)
