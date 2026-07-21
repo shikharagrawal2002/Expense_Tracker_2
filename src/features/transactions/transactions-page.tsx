@@ -51,7 +51,7 @@ export function TransactionsPage() {
   // statement cycle (which is, by definition, the last day of the previous month).
   const { data: previousMonthBalance } = useBalanceAsOf(
     accountId || undefined,
-    datePreset === 'cycle' ? statementCycle.start - 1 : undefined,
+    datePreset === 'cycle' ? statementCycle.start : undefined,
   )
 
   return (
