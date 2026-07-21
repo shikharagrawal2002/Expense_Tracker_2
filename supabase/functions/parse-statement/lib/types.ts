@@ -1,5 +1,10 @@
 export type ImportKind = 'bank' | 'card'
 
+/** Which bank/issuer's column layout to use — a specific value takes priority
+ *  over the generic header-keyword guessing in bank-parsers.ts. 'generic' (or
+ *  omitting the field) always falls back to that guessing. */
+export type BankProvider = 'hsbc' | 'idfc' | 'slice' | 'generic'
+
 export interface ParseRequestBody {
   kind: ImportKind
   fileName: string
@@ -9,9 +14,12 @@ export interface ParseRequestBody {
   /** Account this statement belongs to — used for the duplicate check and,
    *  for card statements, to read billing_cycle_day/payment_due_day defaults. */
   accountId: string
-  /** Optional issuer hint ('icici' | 'hdfc' | 'sbi' | 'axis' | 'generic' ...).
-   *  Falls back to the generic heuristic parser when omitted/unrecognized. */
-  provider?: string
+  /** Which bank's column layout to assume. Omit or send 'generic' to use
+   *  header-keyword auto-detection instead. */
+  provider?: BankProvider
+  /** Password for an encrypted PDF or Excel file (e.g. many credit card
+   *  statements ship locked with the cardholder's PAN/DOB by convention). */
+  password?: string
 }
 
 export type Direction = 'debit' | 'credit'
