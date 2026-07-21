@@ -33,8 +33,8 @@ export async function fetchTransactions(filters: TransactionFilters = {}): Promi
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId)
   if (filters.type) query = query.eq('type', filters.type)
   if (filters.search) query = query.ilike('notes', `%${filters.search}%`)
-  if (filters.dateFrom) query = query.gte('occurred_at', filters.dateFrom)
-  if (filters.dateTo) query = query.lte('occurred_at', filters.dateTo)
+  if (filters.dateFrom) query = query.gte('occurred_at', `${filters.dateFrom}T00:00:00+05:30`)
+  if (filters.dateTo) query = query.lte('occurred_at', `${filters.dateTo}T23:59:59.999+05:30`)
 
   const { data, error } = await query
   if (error) throw error
