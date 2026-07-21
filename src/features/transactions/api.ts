@@ -101,7 +101,7 @@ export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: 
   let txnQuery = supabase
     .from('transactions')
     .select('type, amount, account_id, transfer_account_id')
-    .gt('occurred_at', `${asOfDate}T23:59:59.999`)
+    .gte('occurred_at', `${beforeDate}T00:00:00`)
 
   if (accountId) {
     txnQuery = txnQuery.or(`account_id.eq.${accountId},transfer_account_id.eq.${accountId}`)
