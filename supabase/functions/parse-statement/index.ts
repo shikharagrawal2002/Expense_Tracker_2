@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Invalid JSON body' }, 400)
   }
 
-  const { kind, fileName, mimeType, fileBase64, accountId } = body
+  const { kind, fileName, mimeType, fileBase64, accountId, provider, password } = body
   if (!kind || !fileName || !fileBase64 || !accountId) {
     return jsonResponse(
       { error: 'kind, fileName, fileBase64, and accountId are all required' },
@@ -60,14 +60,14 @@ Deno.serve(async (req: Request) => {
 
   try {
     const bytes = decodeBase64(fileBase64)
-    const content = await extractContent(fileName, mimeType || '', bytes)
+    const content = await extractContent(fileName, mimeType || '', bytes, password)
 
     let result: ParseResult
     if (kind === 'bank') {
-      const transactions = parseBankStatement(content, warnings)
+      const transactions = parseBankStatement(content, warnings, provider)
       result = { transactions, warnings }
     } else {
-      const { transactions, summary } = parseCardStatement(content, warnings)
+      const { transactions, summary } = parseCardStatement(content, warnings, provider)
       result = { transactions, cardSummary: summary, warnings }
     }
 
