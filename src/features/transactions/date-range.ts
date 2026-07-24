@@ -8,41 +8,93 @@ function toIsoDate(d: Date): string {
 }
 
 /** Calendar month containing `reference`, as [first day, last day]. */
-export function getCalendarMonthRange(reference: Date): { start: string; end: string; label: string } {
+export function getCalendarMonthRange(reference: Date): {
+  start: string
+  end: string
+  label: string
+} {
   const year = reference.getFullYear()
   const month = reference.getMonth()
+
   const start = new Date(year, month, 1)
   const end = new Date(year, month + 1, 0)
+
   return {
     start: toIsoDate(start),
     end: toIsoDate(end),
-    label: start.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
+    label: start.toLocaleDateString('en-IN', {
+      month: 'long',
+      year: 'numeric',
+    }),
   }
 }
 
-function toWorkday(date: Date, direction: 'backward' | 'forward' = 'backward'): Date {
-  const result = new Date(date)
-  const step = direction === 'backward' ? -1 : 1
-  while (result.getDay() === 0 || result.getDay() === 6) {
-    result.setDate(result.getDate() + step)
+/**
+ * Returns the nth working day from the end of a month.
+ * n = 1 -> last working day
+ * n = 2 -> second-last working day
+ */
+function nthWorkdayFromEnd(year: number, month: number, n: number): Date {
+  // Last calendar day of the month
+  const date = new Date(year, month + 1, 0)
+
+  let count = 0
+
+  while (true) {
+    const day = date.getDay()
+
+    // Monday-Friday
+    if (day !== 0 && day !== 6) {
+      count++
+
+      if (count === n) {
+        return new Date(date)
+      }
+    }
+
+    date.setDate(date.getDate() - 1)
   }
-  return result
 }
 
-export function getStatementCycleRange(reference: Date): { start: string; end: string; label: string } {
+/**
+ * Statement Cycle
+ * Start = Last working day of previous month
+ * End   = Second-last working day of current month
+ */
+export function getStatementCycleRange(reference: Date): {
+  start: string
+  end: string
+  label: string
+} {
   const year = reference.getFullYear()
   const month = reference.getMonth()
-  const start = toWorkday(new Date(year, month, 0))
-  const end = toWorkday(new Date(year, month + 1, -1))
+
+  // Handle January correctly by letting JS normalize month = -1
+  const start = nthWorkdayFromEnd(year, month - 1, 1)
+  const end = nthWorkdayFromEnd(year, month, 2)
+
   return {
     start: toIsoDate(start),
     end: toIsoDate(end),
-    label: `${start.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+    label: `${start.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+    })} – ${end.toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })}`,
   }
 }
 
-/** Moves the reference date to the same day-of-month one calendar month
- *  forward/back, for "previous cycle" / "next cycle" navigation. */
+/**
+ * Moves the reference date one calendar month
+ * Used for Previous/Next Cycle navigation.
+ */
 export function shiftMonth(reference: Date, direction: 1 | -1): Date {
-  return new Date(reference.getFullYear(), reference.getMonth() + direction, 1)
+  return new Date(
+    reference.getFullYear(),
+    reference.getMonth() + direction,
+    1
+  )
 }
