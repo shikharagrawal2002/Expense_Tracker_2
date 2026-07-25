@@ -102,14 +102,6 @@ export function getStatementCycleRange(reference: Date): {
 
   const start = nextWorkday(previousCycleEnd)
 
-  // 👇 Add this
-  console.log({
-    reference: reference.toDateString(),
-    previousCycleEnd: previousCycleEnd.toDateString(),
-    start: start.toDateString(),
-    currentCycleEnd: currentCycleEnd.toDateString(),
-  })
-
   return {
     start: toIsoDate(start),
     end: toIsoDate(currentCycleEnd),
