@@ -68,3 +68,24 @@ export async function fetchTotalOwed(): Promise<number> {
   if (error) throw error
   return (data ?? []).reduce((sum, p) => sum + Number(p.share_amount), 0)
 }
+
+export interface OwedByPerson {
+  name: string
+  amount: number
+}
+
+/** Groups every unsettled share across all splits by participant name, so you
+ *  can see "who" owes what rather than just a single combined total. Grouping
+ *  is by exact name match (case-sensitive, trimmed) — using the same spelling
+ *  for the same person across different splits keeps this accurate. */
+export async function fetchOwedByPerson(): Promise<OwedByPerson[]> {
+  const { data, error } = await supabase.from('split_participants').select('name, share_amount').eq('is_settled', false)
+  if (error) throw error
+
+  const totals = new Map<string, number>()
+  for (const row of data ?? []) {
+    const key = row.name.trim()
+    totals.set(key, (totals.get(key) ?? 0) + Number(row.share_amount))
+  }
+  return [...totals.entries()].map(([name, amount]) => ({ name, amount })).sort((a, b) => b.amount - a.amount)
+}

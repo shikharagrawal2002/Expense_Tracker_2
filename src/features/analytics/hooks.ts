@@ -8,20 +8,24 @@ export interface CategorySlice {
   total: number
 }
 
-export function useCategoryBreakdown(monthsBack = 1) {
+export function useCategoryBreakdown(monthsBack: number | 'all' = 'all') {
   return useQuery({
     queryKey: ['analytics-category-breakdown', monthsBack],
     queryFn: async (): Promise<CategorySlice[]> => {
-      const since = new Date()
-      since.setMonth(since.getMonth() - monthsBack)
-
-      const { data, error } = await supabase
+      let query = supabase
         .from('transactions')
         .select(
           'amount, category:categories(id,name,color), splits:split_groups(participants:split_participants(share_amount))',
         )
         .eq('type', 'expense')
-        .gte('occurred_at', since.toISOString())
+
+      if (monthsBack !== 'all') {
+        const since = new Date()
+        since.setMonth(since.getMonth() - monthsBack)
+        query = query.gte('occurred_at', since.toISOString())
+      }
+
+      const { data, error } = await query
       if (error) throw error
 
       const totals = new Map<string, CategorySlice>()

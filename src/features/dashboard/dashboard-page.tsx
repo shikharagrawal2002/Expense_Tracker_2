@@ -2,6 +2,7 @@ import { KpiRow } from '@/features/dashboard/components/kpi-row'
 import { CashflowChart } from '@/features/dashboard/components/cashflow-chart'
 import { BudgetStatusList } from '@/features/dashboard/components/budget-status-list'
 import { UpcomingBillsCard } from '@/features/dashboard/components/upcoming-bills-card'
+import { CreditCardAlertsCard } from '@/features/dashboard/components/credit-card-alerts-card'
 import { RecentActivityList } from '@/features/dashboard/components/recent-activity-list'
 import { AiInsightsPanel } from '@/features/dashboard/components/ai-insights-panel'
 import { useAuth } from '@/features/auth/use-auth'
@@ -37,6 +38,7 @@ export function DashboardPage() {
           <AiInsightsPanel />
           <BudgetStatusList />
           <UpcomingBillsCard />
+          <CreditCardAlertsCard />
         </div>
       </div>
     </div>

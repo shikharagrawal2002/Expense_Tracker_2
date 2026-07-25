@@ -60,3 +60,74 @@ export function useUpcomingDues(limit = 4) {
     },
   })
 }
+
+export interface CreditCardAlert {
+  accountId: string
+  accountName: string
+  dueDate: string
+  statementAmount: number
+  minimumDue: number | null
+  utilizationPct: number | null
+  isDueSoon: boolean
+  isHighUtilization: boolean
+}
+
+/** Unpaid card statements, joined with each card's credit limit to flag both
+ *  "due soon" (within a week) and "high utilization" (>30% of the limit) —
+ *  the two things that actually put you at risk of interest/late fees. */
+export function useCreditCardAlerts(dueSoonDays = 7, highUtilizationPct = 30) {
+  return useQuery({
+    queryKey: ['dashboard-credit-card-alerts'],
+    queryFn: async (): Promise<CreditCardAlert[]> => {
+      const { data, error } = await supabase
+        .from('card_statements')
+        .select('due_date, statement_amount, minimum_due, account:accounts(id,name,credit_limit)')
+        .eq('is_paid', false)
+        .order('due_date', { ascending: true })
+      if (error) throw error
+
+      return (
+        data as unknown as {
+          due_date: string
+          statement_amount: number
+          minimum_due: number | null
+          account: { id: string; name: string; credit_limit: number | null } | null
+        }[]
+      ).map((row) => {
+        const utilizationPct = row.account?.credit_limit
+          ? Math.round((row.statement_amount / row.account.credit_limit) * 100)
+          : null
+        return {
+          accountId: row.account?.id ?? '',
+          accountName: row.account?.name ?? 'Unknown card',
+          dueDate: row.due_date,
+          statementAmount: row.statement_amount,
+          minimumDue: row.minimum_due,
+          utilizationPct,
+          isDueSoon: daysUntilDate(row.due_date) <= dueSoonDays,
+          isHighUtilization: (utilizationPct ?? 0) > highUtilizationPct,
+        }
+      })
+    },
+  })
+}
+
+function daysUntilDate(dateStr: string): number {
+  const due = new Date(dateStr)
+  const today = new Date()
+  due.setHours(0, 0, 0, 0)
+  today.setHours(0, 0, 0, 0)
+  return Math.round((due.getTime() - today.getTime()) / 86_400_000)
+}
+
+/** All-time reward points across every card statement — a simple running total. */
+export function useTotalRewardPoints() {
+  return useQuery({
+    queryKey: ['dashboard-reward-points'],
+    queryFn: async (): Promise<number> => {
+      const { data, error } = await supabase.from('card_statements').select('reward_points_earned')
+      if (error) throw error
+      return (data ?? []).reduce((sum, row) => sum + Number(row.reward_points_earned ?? 0), 0)
+    },
+  })
+}

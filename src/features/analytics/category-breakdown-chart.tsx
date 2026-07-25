@@ -1,11 +1,23 @@
+import { useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/shared/empty-state'
 import { formatCurrency } from '@/lib/utils'
 import { useCategoryBreakdown } from '@/features/analytics/hooks'
 import { PieChart as PieChartIcon } from 'lucide-react'
 
-export function CategoryBreakdownChart({ monthsBack = 1 }: { monthsBack?: number }) {
+const PERIOD_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: '1', label: 'This month' },
+  { value: '3', label: 'Last 3 months' },
+  { value: '6', label: 'Last 6 months' },
+  { value: '12', label: 'Last 12 months' },
+  { value: 'all', label: 'All time' },
+]
+
+export function CategoryBreakdownChart() {
+  const [period, setPeriod] = useState('all')
+  const monthsBack = period === 'all' ? 'all' : Number(period)
   const { data: slices, isLoading } = useCategoryBreakdown(monthsBack)
   const total = slices?.reduce((sum, s) => sum + s.total, 0) ?? 0
 
@@ -13,6 +25,13 @@ export function CategoryBreakdownChart({ monthsBack = 1 }: { monthsBack?: number
     <Card>
       <CardHeader>
         <CardTitle>Category breakdown</CardTitle>
+        <Select value={period} onChange={(e) => setPeriod(e.target.value)} className="!h-8 !w-auto !text-xs">
+          {PERIOD_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </Select>
       </CardHeader>
       <CardContent>
         {!isLoading && slices?.length === 0 && (

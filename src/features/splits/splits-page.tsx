@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useSplitGroups, useSetParticipantSettled, useDeleteSplitGroup } from '@/features/splits/hooks'
 import { SplitFormDialog } from '@/features/splits/split-form-dialog'
+import { OwedByPersonCard } from '@/features/splits/owed-by-person-card'
 
 export function SplitsPage() {
   const { data: splitGroups, isLoading } = useSplitGroups()
@@ -29,6 +30,8 @@ export function SplitsPage() {
           }
         />
       </div>
+
+      <OwedByPersonCard />
 
       {isLoading && (
         <div className="space-y-3">
