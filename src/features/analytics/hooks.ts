@@ -17,28 +17,43 @@ export function useCategoryBreakdown(monthsBack = 1) {
 
       const { data, error } = await supabase
         .from('transactions')
-        .select('amount, category:categories(id,name,color)')
+        .select(
+          'amount, category:categories(id,name,color), splits:split_groups(participants:split_participants(share_amount))',
+        )
         .eq('type', 'expense')
         .gte('occurred_at', since.toISOString())
       if (error) throw error
 
       const totals = new Map<string, CategorySlice>()
-      for (const row of data as unknown as { amount: number; category: { id: string; name: string; color: string } | null }[]) {
+      for (const row of data as unknown as {
+        amount: number
+        category: { id: string; name: string; color: string } | null
+        splits: { participants: { share_amount: number }[] }[] | null
+      }[]) {
+        // If this expense was split, the amount other people owe you isn't
+        // really your own spending in this category — only what's left after
+        // subtracting their shares actually came out of your pocket.
+        const splitShares = (row.splits ?? []).reduce(
+          (sum, group) => sum + (group.participants ?? []).reduce((s, p) => s + Number(p.share_amount), 0),
+          0,
+        )
+        const netAmount = Math.max(0, row.amount - splitShares)
+
         const cat = row.category
         const key = cat?.id ?? 'uncategorized'
         const existing = totals.get(key)
         if (existing) {
-          existing.total += row.amount
+          existing.total += netAmount
         } else {
           totals.set(key, {
             categoryId: key,
             name: cat?.name ?? 'Uncategorized',
             color: cat?.color ?? '#94a3b8',
-            total: row.amount,
+            total: netAmount,
           })
         }
       }
-      return [...totals.values()].sort((a, b) => b.total - a.total)
+      return [...totals.values()].filter((s) => s.total > 0).sort((a, b) => b.total - a.total)
     },
   })
 }

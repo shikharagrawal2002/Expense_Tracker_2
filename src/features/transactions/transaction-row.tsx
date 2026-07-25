@@ -1,7 +1,8 @@
-import { Trash2, Pencil, ArrowRight, ArrowLeftRight } from 'lucide-react'
+import { Trash2, Pencil, ArrowRight, ArrowLeftRight, Users } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useDeleteTransaction } from '@/features/transactions/hooks'
 import { TransactionFormDialog } from '@/features/transactions/transaction-form-dialog'
+import { SplitFormDialog } from '@/features/splits/split-form-dialog'
 import type { Transaction } from '@/lib/supabase/types'
 
 interface TransactionRowProps {
@@ -80,6 +81,20 @@ export function TransactionRow({ txn, viewAccountId }: TransactionRowProps) {
         {formatCurrency(signedAmount, txn.currency)}
       </p>
       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        {txn.type === 'expense' && (
+          <SplitFormDialog
+            presetTransaction={txn}
+            trigger={
+              <button
+                className="rounded-lg p-1.5 hover:surface text-muted hover:text-inherit transition-colors"
+                aria-label="Add to split"
+                title="Split this expense"
+              >
+                <Users className="h-3.5 w-3.5" />
+              </button>
+            }
+          />
+        )}
         <TransactionFormDialog
           transaction={txn}
           trigger={

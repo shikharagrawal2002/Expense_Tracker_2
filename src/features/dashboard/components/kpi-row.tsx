@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, CreditCard, Activity } from 'lucide-react'
+import { TrendingUp, TrendingDown, CreditCard, Activity, HandCoins } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressRing } from '@/components/ui/progress-ring'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,19 +10,19 @@ export function KpiRow() {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-32 rounded-2xl" />
         ))}
       </div>
     )
   }
 
-  const { netWorth, currentMonthNet, savingsRate, creditUtilization, healthScore } = data
+  const { netWorth, currentMonthNet, savingsRate, creditUtilization, healthScore, owedToYou } = data
   const isPositiveNet = currentMonthNet >= 0
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
       {/* Financial health score — signature ring, larger emphasis */}
       <Card>
         <CardContent className="pt-5 flex items-center gap-4">
@@ -94,6 +94,23 @@ export function KpiRow() {
               style={{ width: `${creditUtilization}%` }}
             />
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="pt-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted">Owed to you</p>
+            <HandCoins className="h-3.5 w-3.5 text-muted" />
+          </div>
+          <p
+            className={cn(
+              'font-display text-2xl font-semibold mt-2 num',
+              owedToYou > 0 && 'text-[var(--color-positive-600)]',
+            )}
+          >
+            {formatCompactCurrency(owedToYou)}
+          </p>
+          <p className="text-xs text-muted mt-1">{owedToYou > 0 ? 'across pending splits' : 'all settled up'}</p>
         </CardContent>
       </Card>
     </div>

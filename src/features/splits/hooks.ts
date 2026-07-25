@@ -4,6 +4,7 @@ import {
   createSplitGroup,
   setParticipantSettled,
   deleteSplitGroup,
+  fetchTotalOwed,
 } from '@/features/splits/api'
 import type { NewSplitGroup } from '@/lib/supabase/types'
 
@@ -35,4 +36,10 @@ export function useDeleteSplitGroup() {
     mutationFn: (id: string) => deleteSplitGroup(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
   })
+}
+
+/** Used on the dashboard for the "owed to you" KPI. Shares the same query key
+ *  prefix as the splits list so settling/creating a split invalidates this too. */
+export function useTotalOwed() {
+  return useQuery({ queryKey: [...SPLITS_KEY, 'total-owed'], queryFn: fetchTotalOwed })
 }

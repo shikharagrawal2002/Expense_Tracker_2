@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAccounts } from '@/features/accounts/hooks'
 import { useMonthlyTrend } from '@/features/analytics/hooks'
+import { useTotalOwed } from '@/features/splits/hooks'
 import { supabase } from '@/lib/supabase/client'
 
 export interface DashboardKpis {
@@ -9,14 +10,16 @@ export interface DashboardKpis {
   savingsRate: number // 0-100
   creditUtilization: number // 0-100
   healthScore: number // 0-100, simple heuristic — see comment below
+  owedToYou: number
 }
 
 export function useDashboardKpis() {
   const accountsQuery = useAccounts()
   const trendQuery = useMonthlyTrend(2)
+  const owedQuery = useTotalOwed()
 
-  const isLoading = accountsQuery.isLoading || trendQuery.isLoading
-  const isError = accountsQuery.isError || trendQuery.isError
+  const isLoading = accountsQuery.isLoading || trendQuery.isLoading || owedQuery.isLoading
+  const isError = accountsQuery.isError || trendQuery.isError || owedQuery.isError
 
   const accounts = accountsQuery.data ?? []
   const netWorth = accounts.reduce((sum, a) => sum + a.current_balance, 0)
@@ -36,7 +39,7 @@ export function useDashboardKpis() {
   const rawScore = 0.6 * Math.max(0, savingsRate) + 0.4 * (100 - creditUtilization)
   const healthScore = Math.round(Math.min(100, Math.max(0, rawScore)))
 
-  const data: DashboardKpis = { netWorth, currentMonthNet, savingsRate, creditUtilization, healthScore }
+  const data: DashboardKpis = { netWorth, currentMonthNet, savingsRate, creditUtilization, healthScore, owedToYou: owedQuery.data ?? 0 }
   return { data, isLoading, isError }
 }
 

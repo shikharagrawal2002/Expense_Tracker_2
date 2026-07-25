@@ -59,3 +59,12 @@ export async function deleteSplitGroup(id: string): Promise<void> {
   const { error } = await supabase.from('split_groups').delete().eq('id', id)
   if (error) throw error
 }
+
+/** Total across every unsettled participant share, across all your splits —
+ *  RLS on split_participants already scopes this to groups you own, via the
+ *  "own split_participants" policy joining through split_groups.user_id. */
+export async function fetchTotalOwed(): Promise<number> {
+  const { data, error } = await supabase.from('split_participants').select('share_amount').eq('is_settled', false)
+  if (error) throw error
+  return (data ?? []).reduce((sum, p) => sum + Number(p.share_amount), 0)
+}

@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/select'
 import { formatCurrency } from '@/lib/utils'
 import { useTransactions } from '@/features/transactions/hooks'
 import { useCreateSplitGroup } from '@/features/splits/hooks'
+import type { Transaction } from '@/lib/supabase/types'
 
 interface ParticipantRow {
   key: string
@@ -18,7 +19,15 @@ function emptyParticipant(): ParticipantRow {
   return { key: crypto.randomUUID(), name: '', shareAmount: '' }
 }
 
-export function SplitFormDialog({ trigger }: { trigger: React.ReactNode }) {
+interface SplitFormDialogProps {
+  trigger: React.ReactNode
+  /** When provided (e.g. launched from the "Add to split" button on a
+   *  transaction row), the transaction is locked in and the picker is
+   *  replaced with a read-only summary instead of a dropdown. */
+  presetTransaction?: Transaction
+}
+
+export function SplitFormDialog({ trigger, presetTransaction }: SplitFormDialogProps) {
   const [open, setOpen] = useState(false)
   const [transactionId, setTransactionId] = useState('')
   const [title, setTitle] = useState('')
@@ -26,10 +35,11 @@ export function SplitFormDialog({ trigger }: { trigger: React.ReactNode }) {
   const [participants, setParticipants] = useState<ParticipantRow[]>([emptyParticipant(), emptyParticipant()])
   const [error, setError] = useState<string | null>(null)
 
+  // Only need the full expense list when there's no preset transaction to lock in.
   const { data: transactions } = useTransactions({ type: 'expense' })
   const createSplitGroup = useCreateSplitGroup()
 
-  const selectedTransaction = transactions?.find((t) => t.id === transactionId)
+  const selectedTransaction = presetTransaction ?? transactions?.find((t) => t.id === transactionId)
 
   // Pre-fill title/amount from the picked transaction, without stomping on
   // manual edits if the person already typed something.
@@ -46,8 +56,10 @@ export function SplitFormDialog({ trigger }: { trigger: React.ReactNode }) {
       setTotalAmount('')
       setParticipants([emptyParticipant(), emptyParticipant()])
       setError(null)
+    } else if (presetTransaction) {
+      setTransactionId(presetTransaction.id)
     }
-  }, [open])
+  }, [open, presetTransaction])
 
   const totalShares = useMemo(
     () => participants.reduce((sum, p) => sum + (Number(p.shareAmount) || 0), 0),
@@ -104,16 +116,26 @@ export function SplitFormDialog({ trigger }: { trigger: React.ReactNode }) {
       <DialogContent title="Split an expense">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="split-transaction">Transaction</Label>
-            <Select id="split-transaction" value={transactionId} onChange={(e) => setTransactionId(e.target.value)}>
-              <option value="">Select the expense to split…</option>
-              {transactions?.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {new Date(t.occurred_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} ·{' '}
-                  {t.notes || 'Uncategorized'} · {formatCurrency(t.amount, t.currency)}
-                </option>
-              ))}
-            </Select>
+            <Label>Transaction</Label>
+            {presetTransaction ? (
+              <div className="rounded-lg border border-hairline surface-2 px-3 py-2 text-sm">
+                {new Date(presetTransaction.occurred_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                {' · '}
+                {presetTransaction.notes || 'Uncategorized'}
+                {' · '}
+                {formatCurrency(presetTransaction.amount, presetTransaction.currency)}
+              </div>
+            ) : (
+              <Select id="split-transaction" value={transactionId} onChange={(e) => setTransactionId(e.target.value)}>
+                <option value="">Select the expense to split…</option>
+                {transactions?.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {new Date(t.occurred_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} ·{' '}
+                    {t.notes || 'Uncategorized'} · {formatCurrency(t.amount, t.currency)}
+                  </option>
+                ))}
+              </Select>
+            )}
           </div>
 
           <div>
