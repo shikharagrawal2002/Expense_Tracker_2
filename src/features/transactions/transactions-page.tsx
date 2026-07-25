@@ -47,13 +47,28 @@ export function TransactionsPage() {
     dateTo,
   })
 
-  // "Previous month final balance": the closing balance as of the start of the
-  // statement cycle (which is, by definition, the last day of the previous month).
+  function previousDate(isoDate: string): string {
+  const d = new Date(`${isoDate}T00:00:00`)
+  d.setDate(d.getDate() - 1)
+
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+  }
+  
+
+  const previousBalanceDate =
+    datePreset === 'cycle'
+      ? previousDate(statementCycle.start)
+      : undefined
+  
   const { data: previousMonthBalance } = useBalanceAsOf(
     accountId || undefined,
-    datePreset === 'cycle' ? statementCycle.start : undefined,
+    previousBalanceDate,
   )
-
+  
   return (
     <div className="max-w-[1000px] space-y-5">
       <div className="flex items-start justify-between">
