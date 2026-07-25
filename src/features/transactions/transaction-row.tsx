@@ -6,6 +6,11 @@ import type { Transaction } from '@/lib/supabase/types'
 
 interface TransactionRowProps {
   txn: Transaction
+  /** The account currently being viewed (e.g. the Transactions page's account
+   *  filter, or an account-detail screen). Used to decide, for a transfer,
+   *  whether this account was the source (shows negative) or destination
+   *  (shows positive) — a transfer has no inherent sign on its own, it depends
+   *  on which side of it you're looking from. */
   viewAccountId?: string
 }
 
@@ -23,11 +28,15 @@ export function TransactionRow({ txn, viewAccountId }: TransactionRowProps) {
     signedAmount = -txn.amount
   } else if (txn.type === 'transfer') {
     if (viewAccountId && txn.transfer_account_id === viewAccountId) {
+      // We're looking at the destination account: money arrived here.
       signedAmount = txn.amount
       amountColorClass = 'text-[var(--color-positive-600)]'
     } else if (viewAccountId && txn.account_id === viewAccountId) {
+      // We're looking at the source account: money left here.
       signedAmount = -txn.amount
     }
+    // else: no specific account in view (e.g. "All accounts") — ambiguous which
+    // side we're looking from, so leave it unsigned and neutrally colored.
   }
 
   const subtitleDate = new Date(txn.occurred_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })

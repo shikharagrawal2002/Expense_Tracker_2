@@ -4,9 +4,8 @@ const MONTHS: Record<string, string> = {
 }
 
 /** Parses the handful of date formats Indian bank/card statements actually use
- *  (DD/MM/YYYY, DD-MM-YYYY, DD-Mon-YYYY, DD Mon YYYY, YYYY-MM-DD, DDMonYYYY) into
- *  ISO yyyy-mm-dd. Returns null rather than throwing, so callers can just skip
- *  unparsable lines. */
+ *  (DD/MM/YYYY, DD-MM-YYYY, DD-Mon-YYYY, DD Mon YYYY, YYYY-MM-DD) into ISO yyyy-mm-dd.
+ *  Returns null rather than throwing, so callers can just skip unparsable lines. */
 export function parseStatementDate(raw: string): string | null {
   const value = raw.trim().replace(/['â€™]/g, '')
   if (!value) return null
@@ -44,6 +43,32 @@ export function parseStatementDate(raw: string): string | null {
 
   return null
 }
+
+/** Same date formats as parseStatementDate, but matched at the START of a
+ *  longer line (not requiring the whole line to be just a date) — used to
+ *  detect where a new transaction begins in PDF text where the description
+ *  wraps across multiple lines, so the date, amount, and balance can end up
+ *  on different lines than where the transaction started. */
+const LEADING_DATE_PATTERNS = [
+  /^(\d{4}-\d{1,2}-\d{1,2})\b/,
+  /^(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\b/,
+  /^(\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4})\b/,
+  /^(\d{1,2}[A-Za-z]{3}\d{4})\b/,
+]
+
+export function extractLeadingDate(line: string): { date: string; rest: string } | null {
+  for (const pattern of LEADING_DATE_PATTERNS) {
+    const m = line.match(pattern)
+    if (!m) continue
+    const iso = parseStatementDate(m[1])
+    if (iso) return { date: iso, rest: line.slice(m[0].length).trim() }
+  }
+  return null
+}
+
+/** Matches a currency amount like "₹12.25", "-₹1,64,246.04", "₹3,000" — the
+ *  format this statement style uses instead of a trailing CR/DR suffix. */
+export const AMOUNT_TOKEN_RE = /-?₹\s?[\d,]+(?:\.\d+)?/g
 
 /** Parses amount strings like "1,234.50", "₹1,234.50", "(1,234.50)" (accounting
  *  negative), "1234.50 CR" into a plain number. Returns null if nothing numeric found. */

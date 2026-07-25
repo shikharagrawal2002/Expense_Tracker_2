@@ -173,9 +173,17 @@ export function TransactionsPage() {
           {!isLoading && transactions && transactions.length > 0 && (
             <div className="divide-y divide-[var(--color-border-light)] dark:divide-[var(--color-border-dark)]">
               {transactions.flatMap((txn) => {
+                // Viewing a specific account: show the one row, correctly
+                // signed for that account's side of the transfer (or as-is for
+                // income/expense).
                 if (accountId) {
                   return [<TransactionRow key={txn.id} txn={txn} viewAccountId={accountId} />]
                 }
+                // Viewing "All accounts": a transfer has no single sign that's
+                // correct for both sides at once, so show it as two entries —
+                // one leaving the source account (negative), one arriving at
+                // the destination (positive) — same underlying transaction,
+                // editing/deleting either one acts on it as a whole.
                 if (txn.type === 'transfer' && txn.transfer_account_id) {
                   return [
                     <TransactionRow key={`${txn.id}-out`} txn={txn} viewAccountId={txn.account_id} />,

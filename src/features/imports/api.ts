@@ -6,6 +6,7 @@ import type {
   NewCardStatement,
   CardStatement,
   ParseStatementResult,
+  BankProvider,
 } from '@/lib/supabase/types'
 import type { ImportKind } from '@/features/imports/types'
 
@@ -26,11 +27,15 @@ export async function parseStatementFile(params: {
   file: File
   kind: ImportKind
   accountId: string
+  provider?: BankProvider
+  password?: string
 }): Promise<ParseStatementResult> {
   const fileBase64 = await readFileAsBase64(params.file)
   const { data, error } = await supabase.functions.invoke<ParseStatementResult>('parse-statement', {
     body: {
       kind: params.kind,
+      provider: params.provider,
+      password: params.password || undefined,
       accountId: params.accountId,
       fileName: params.file.name,
       mimeType: params.file.type,

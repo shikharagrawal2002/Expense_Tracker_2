@@ -113,6 +113,38 @@ export type NewCardStatement = Pick<CardStatement, 'account_id' | 'statement_mon
 // supabase/functions/parse-statement/lib/types.ts)
 // ----------------------------------------------------------------------------
 
+export type BankProvider = 'hsbc' | 'idfc' | 'slice' | 'generic'
+
+export interface SplitParticipant {
+  id: string
+  split_group_id: string
+  name: string
+  share_amount: number
+  is_settled: boolean
+  settled_at: string | null
+}
+
+export type NewSplitParticipant = Pick<SplitParticipant, 'name' | 'share_amount'>
+
+export interface SplitGroup {
+  id: string
+  user_id: string
+  transaction_id: string | null
+  title: string
+  total_amount: number
+  created_at: string
+  // convenience joins
+  transaction?: Pick<Transaction, 'id' | 'amount' | 'occurred_at' | 'notes' | 'currency'> & {
+    account?: Pick<Account, 'id' | 'name'>
+  }
+  participants?: SplitParticipant[]
+}
+
+export type NewSplitGroup = Pick<SplitGroup, 'title' | 'total_amount'> &
+  Partial<Pick<SplitGroup, 'transaction_id'>> & {
+    participants: NewSplitParticipant[]
+  }
+
 export type ParsedDirection = 'debit' | 'credit'
 
 export interface ParsedTransaction {

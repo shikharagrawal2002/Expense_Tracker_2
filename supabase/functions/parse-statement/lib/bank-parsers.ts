@@ -1,5 +1,23 @@
-import type { ExtractedContent, ParsedTransaction, BankProvider } from './types.ts'
 import { parseAmount, parseStatementDate, detectDirectionFromText, suggestCategory, extractLeadingDate, AMOUNT_TOKEN_RE } from './parse-helpers.ts'
+
+// Inlined rather than imported from ./types.ts — see the note in dedupe.ts
+// for why: that file is type-only and some deploy pipelines drop it.
+type ExtractedContent =
+  | { format: 'table'; rows: string[][] }
+  | { format: 'text'; lines: string[] }
+
+interface ParsedTransaction {
+  date: string
+  description: string
+  amount: number
+  direction: 'debit' | 'credit'
+  isDuplicate: boolean
+  balanceAfter?: number
+  suggestedCategory?: string
+  sourceLine: string
+}
+
+export type BankProvider = 'hsbc' | 'idfc' | 'slice' | 'generic'
 
 const HEADER_KEYWORDS = {
   date: ['date', 'txn date', 'transaction date', 'value date', 'posting date'],
@@ -48,14 +66,23 @@ function resolveHeaderKeywords(provider?: BankProvider): typeof HEADER_KEYWORDS 
   return merged
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function findColumn(headerRow: string[], keywords: string[]): number {
   const normalized = headerRow.map((h) => (h || '').toLowerCase().trim())
   for (const keyword of keywords) {
     const idx = normalized.findIndex((h) => h === keyword)
     if (idx !== -1) return idx
   }
+  // Whole-word match only — a plain .includes() check would let short keywords
+  // like "cr" or "dr" false-match inside unrelated words (e.g. "cr" is a
+  // substring of "description", "dr" is a substring of "address"), silently
+  // pointing a column at the wrong field.
   for (const keyword of keywords) {
-    const idx = normalized.findIndex((h) => h.includes(keyword))
+    const pattern = new RegExp(`\\b${escapeRegExp(keyword)}\\b`, 'i')
+    const idx = normalized.findIndex((h) => pattern.test(h))
     if (idx !== -1) return idx
   }
   return -1

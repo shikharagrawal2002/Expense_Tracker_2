@@ -1,6 +1,30 @@
-import type { CardStatementSummary, ExtractedContent, ParsedTransaction } from './types.ts'
 import { parseAmount, parseStatementDate } from './parse-helpers.ts'
-import { parseBankStatement } from './bank-parsers.ts'
+import { parseBankStatement, type BankProvider } from './bank-parsers.ts'
+
+// Inlined rather than imported from ./types.ts — see the note in dedupe.ts
+// for why: that file is type-only and some deploy pipelines drop it.
+type ExtractedContent =
+  | { format: 'table'; rows: string[][] }
+  | { format: 'text'; lines: string[] }
+
+interface ParsedTransaction {
+  date: string
+  description: string
+  amount: number
+  direction: 'debit' | 'credit'
+  isDuplicate: boolean
+  balanceAfter?: number
+  suggestedCategory?: string
+  sourceLine: string
+}
+
+interface CardStatementSummary {
+  statementMonth: string
+  statementDate: string | null
+  dueDate: string | null
+  statementAmount: number | null
+  minimumDue: number | null
+}
 
 const LABELS = {
   statementDate: [/statement\s*date/i, /bill\s*date/i],
@@ -67,8 +91,9 @@ export function extractCardSummary(content: ExtractedContent, warnings: string[]
 export function parseCardStatement(
   content: ExtractedContent,
   warnings: string[],
+  provider?: BankProvider,
 ): { transactions: ParsedTransaction[]; summary: CardStatementSummary } {
   const summary = extractCardSummary(content, warnings)
-  const transactions = parseBankStatement(content, warnings)
+  const transactions = parseBankStatement(content, warnings, provider)
   return { transactions, summary }
 }

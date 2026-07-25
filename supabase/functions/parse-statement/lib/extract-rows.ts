@@ -8,7 +8,12 @@ import * as XLSX from 'npm:xlsx@0.18.5'
 // for edge/serverless runtimes (Cloudflare Workers, Vercel Edge, Deno) with no
 // Node fs dependency, so it doesn't have this problem.
 import { extractText, getDocumentProxy } from 'npm:unpdf@1.4.0'
-import type { ExtractedContent } from './types.ts'
+
+// Inlined rather than imported from ./types.ts — see the note in dedupe.ts
+// for why: that file is type-only and some deploy pipelines drop it.
+type ExtractedContent =
+  | { format: 'table'; rows: string[][] }
+  | { format: 'text'; lines: string[] }
 
 function isSpreadsheet(fileName: string, mimeType: string) {
   const lower = fileName.toLowerCase()

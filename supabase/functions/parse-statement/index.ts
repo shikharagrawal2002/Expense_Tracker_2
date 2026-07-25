@@ -22,10 +22,47 @@ globalThis.Buffer = Buffer
 
 import { corsHeaders, jsonResponse } from './lib/cors.ts'
 import { extractContent } from './lib/extract-rows.ts'
-import { parseBankStatement } from './lib/bank-parsers.ts'
+import { parseBankStatement, type BankProvider } from './lib/bank-parsers.ts'
 import { parseCardStatement } from './lib/card-parsers.ts'
 import { flagDuplicates } from './lib/dedupe.ts'
-import type { ParseRequestBody, ParseResult } from './lib/types.ts'
+
+// Inlined rather than imported from ./lib/types.ts — see the note in
+// lib/dedupe.ts for why: that file is type-only and some deploy pipelines
+// drop it, breaking every other file's import of it.
+interface ParseRequestBody {
+  kind: 'bank' | 'card'
+  fileName: string
+  mimeType: string
+  fileBase64: string
+  accountId: string
+  provider?: BankProvider
+  password?: string
+}
+
+interface ParsedTransaction {
+  date: string
+  description: string
+  amount: number
+  direction: 'debit' | 'credit'
+  isDuplicate: boolean
+  balanceAfter?: number
+  suggestedCategory?: string
+  sourceLine: string
+}
+
+interface CardStatementSummary {
+  statementMonth: string
+  statementDate: string | null
+  dueDate: string | null
+  statementAmount: number | null
+  minimumDue: number | null
+}
+
+interface ParseResult {
+  transactions: ParsedTransaction[]
+  cardSummary?: CardStatementSummary
+  warnings: string[]
+}
 
 function decodeBase64(base64: string): Uint8Array {
   const binary = atob(base64)

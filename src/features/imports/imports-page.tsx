@@ -3,7 +3,7 @@ import { Landmark, CreditCard, AlertTriangle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
-import { Label } from '@/components/ui/input'
+import { Label, Input } from '@/components/ui/input'
 import { useAccounts } from '@/features/accounts/hooks'
 import { useCategories } from '@/features/categories/hooks'
 import { StatementDropzone } from '@/features/imports/statement-dropzone'
@@ -12,7 +12,13 @@ import { CardSummaryForm } from '@/features/imports/card-summary-form'
 import { ImportHistoryList } from '@/features/imports/import-history-list'
 import { useParseStatement, useConfirmBankImport, useConfirmCardImport } from '@/features/imports/hooks'
 import { toReviewRow, type ImportKind, type ReviewRow } from '@/features/imports/types'
-import type { CardStatementSummary, NewTransaction } from '@/lib/supabase/types'
+import type { CardStatementSummary, NewTransaction, BankProvider } from '@/lib/supabase/types'
+
+const BANK_OPTIONS: Array<{ value: BankProvider; label: string }> = [
+  { value: 'hsbc', label: 'HSBC' },
+  { value: 'idfc', label: 'IDFC First Bank' },
+  { value: 'slice', label: 'Slice' },
+]
 
 const TABS: Array<{ key: ImportKind; label: string; icon: typeof Landmark; hint: string }> = [
   {
@@ -32,7 +38,9 @@ const TABS: Array<{ key: ImportKind; label: string; icon: typeof Landmark; hint:
 export function ImportsPage() {
   const [kind, setKind] = useState<ImportKind>('bank')
   const [accountId, setAccountId] = useState('')
+  const [provider, setProvider] = useState<BankProvider>('hsbc')
   const [file, setFile] = useState<File | null>(null)
+  const [password, setPassword] = useState('')
   const [rows, setRows] = useState<ReviewRow[]>([])
   const [cardSummary, setCardSummary] = useState<CardStatementSummary | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
@@ -61,14 +69,16 @@ export function ImportsPage() {
   function handleTabChange(nextKind: ImportKind) {
     setKind(nextKind)
     setAccountId('')
+    setProvider('hsbc')
     setFile(null)
+    setPassword('')
     resetResults()
   }
 
   async function handleParse() {
     if (!file || !accountId) return
     resetResults()
-    const result = await parseStatement.mutateAsync({ file, kind, accountId })
+    const result = await parseStatement.mutateAsync({ file, kind, accountId, provider, password })
     setRows(result.transactions.map((t, i) => toReviewRow(t, i, null)))
     if (result.cardSummary) setCardSummary(result.cardSummary)
     setWarnings(result.warnings)
@@ -164,6 +174,21 @@ export function ImportsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
+            <Label>Bank</Label>
+            <Select value={provider} onChange={(e) => setProvider(e.target.value as BankProvider)}>
+              {BANK_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+            <p className="mt-1 text-xs text-muted">
+              Picking your bank uses its exact column layout instead of guessing — more reliable if auto-detect
+              misses something.
+            </p>
+          </div>
+
+          <div>
             <Label>Account</Label>
             <Select value={accountId} onChange={(e) => setAccountId(e.target.value)}>
               <option value="">Select an account…</option>
@@ -182,7 +207,33 @@ export function ImportsPage() {
             )}
           </div>
 
-          <StatementDropzone file={file} onFileSelected={(f) => { setFile(f); resetResults() }} disabled={!accountId} />
+          <StatementDropzone
+            file={file}
+            onFileSelected={(f) => {
+              setFile(f)
+              setPassword('')
+              resetResults()
+            }}
+            disabled={!accountId}
+          />
+
+          {file?.name.toLowerCase().endsWith('.pdf') && (
+            <div>
+              <Label htmlFor="pdf-password">PDF password (if locked)</Label>
+              <Input
+                id="pdf-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Leave blank if this PDF isn't password-protected"
+                autoComplete="off"
+              />
+              <p className="mt-1 text-xs text-muted">
+                Common for credit card statements — many issuers lock the PDF with your PAN, date of birth, or
+                similar. This is sent straight to Supabase to unlock the file for parsing; it isn't stored anywhere.
+              </p>
+            </div>
+          )}
 
           <Button onClick={handleParse} disabled={!file || !accountId || parseStatement.isPending}>
             {parseStatement.isPending ? 'Parsing…' : 'Parse statement'}

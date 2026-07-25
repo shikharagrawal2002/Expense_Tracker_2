@@ -9,7 +9,7 @@ import {
   upsertCardStatement,
 } from '@/features/imports/api'
 import type { ImportKind } from '@/features/imports/types'
-import type { NewTransaction, NewCardStatement } from '@/lib/supabase/types'
+import type { NewTransaction, NewCardStatement, BankProvider } from '@/lib/supabase/types'
 
 const IMPORT_BATCHES_KEY = ['import-batches'] as const
 
@@ -19,7 +19,13 @@ export function useImportBatches() {
 
 export function useParseStatement() {
   return useMutation({
-    mutationFn: (params: { file: File; kind: ImportKind; accountId: string }) => parseStatementFile(params),
+    mutationFn: (params: {
+      file: File
+      kind: ImportKind
+      accountId: string
+      provider?: BankProvider
+      password?: string
+    }) => parseStatementFile(params),
   })
 }
 

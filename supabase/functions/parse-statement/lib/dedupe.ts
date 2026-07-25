@@ -1,5 +1,20 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.0'
-import type { ParsedTransaction } from './types.ts'
+
+// Inlined rather than imported from ./types.ts — that file contains only
+// type-level declarations (no runtime code), and some deploy pipelines will
+// silently drop a file that compiles down to nothing, breaking every other
+// file's import of it. Keeping the shape colocated here avoids depending on
+// that file existing at all.
+interface ParsedTransaction {
+  date: string
+  description: string
+  amount: number
+  direction: 'debit' | 'credit'
+  isDuplicate: boolean
+  balanceAfter?: number
+  suggestedCategory?: string
+  sourceLine: string
+}
 
 function signature(date: string, amount: number): string {
   return `${date}|${amount.toFixed(2)}`

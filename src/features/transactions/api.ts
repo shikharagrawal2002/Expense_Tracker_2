@@ -33,8 +33,8 @@ export async function fetchTransactions(filters: TransactionFilters = {}): Promi
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId)
   if (filters.type) query = query.eq('type', filters.type)
   if (filters.search) query = query.ilike('notes', `%${filters.search}%`)
-  if (filters.dateFrom) query = query.gte('occurred_at', `${filters.dateFrom}T00:00:00+05:30`)
-  if (filters.dateTo) query = query.lte('occurred_at', `${filters.dateTo}T23:59:59.999+05:30`)
+  if (filters.dateFrom) query = query.gte('occurred_at', filters.dateFrom)
+  if (filters.dateTo) query = query.lte('occurred_at', filters.dateTo)
 
   const { data, error } = await query
   if (error) throw error
@@ -89,7 +89,7 @@ export async function editTransaction(input: EditTransactionInput): Promise<Tran
  *  current authoritative balance and undoing every transaction that happened
  *  strictly after that date. This avoids assuming a zero starting balance or
  *  needing a separate balance-history table. */
-export async function fetchBalanceAsOf(accountId: string | undefined, beforeDate: string): Promise<number> {
+export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: string): Promise<number> {
   let accountsQuery = supabase.from('accounts').select('id, current_balance')
   if (accountId) accountsQuery = accountsQuery.eq('id', accountId)
   const { data: accounts, error: accountsError } = await accountsQuery
@@ -101,7 +101,7 @@ export async function fetchBalanceAsOf(accountId: string | undefined, beforeDate
   let txnQuery = supabase
     .from('transactions')
     .select('type, amount, account_id, transfer_account_id')
-    .gte('occurred_at', `${beforeDate}T00:00:00+05:30`)
+    .gt('occurred_at', `${asOfDate}T23:59:59.999`)
 
   if (accountId) {
     txnQuery = txnQuery.or(`account_id.eq.${accountId},transfer_account_id.eq.${accountId}`)
