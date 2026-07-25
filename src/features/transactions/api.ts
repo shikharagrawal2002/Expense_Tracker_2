@@ -125,7 +125,10 @@ export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: 
       if (t.transfer_account_id === accountId) deltaSinceThen += amount
     }
   }
-
+  
+  console.log("asOfDate:", asOfDate)
+  console.log("cutoff:", `${asOfDate}T23:59:59.999`)
+  
   return currentTotal - deltaSinceThen
 }
 
