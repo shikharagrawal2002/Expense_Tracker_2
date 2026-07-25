@@ -28,6 +28,8 @@ export function TransactionsPage() {
   const calendarMonth = useMemo(() => getCalendarMonthRange(cycleReference), [cycleReference])
   const statementCycle = useMemo(() => getStatementCycleRange(cycleReference), [cycleReference])
 
+  console.log(statementCycle)
+  
   const { dateFrom, dateTo } = useMemo(() => {
     if (datePreset === 'this-month') return { dateFrom: calendarMonth.start, dateTo: calendarMonth.end }
     if (datePreset === 'cycle') return { dateFrom: statementCycle.start, dateTo: statementCycle.end }
