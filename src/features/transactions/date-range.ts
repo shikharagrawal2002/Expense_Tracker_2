@@ -29,22 +29,30 @@ export function getCalendarMonthRange(reference: Date): {
   }
 }
 
+/** Returns true if Monday-Friday */
+function isWorkday(date: Date): boolean {
+  const day = date.getDay()
+  return day !== 0 && day !== 6
+}
+
 /**
  * Returns the nth working day from the end of a month.
- * n = 1 -> last working day
- * n = 2 -> second-last working day
+ *
+ * n = 1 -> Last working day
+ * n = 2 -> Second-last working day
  */
-function nthWorkdayFromEnd(year: number, month: number, n: number): Date {
-  // Last calendar day of the month
+function nthWorkdayFromEnd(
+  year: number,
+  month: number,
+  n: number
+): Date {
+  // JS automatically handles month = -1 or 12
   const date = new Date(year, month + 1, 0)
 
   let count = 0
 
   while (true) {
-    const day = date.getDay()
-
-    // Monday-Friday
-    if (day !== 0 && day !== 6) {
+    if (isWorkday(date)) {
       count++
 
       if (count === n) {
@@ -57,9 +65,29 @@ function nthWorkdayFromEnd(year: number, month: number, n: number): Date {
 }
 
 /**
+ * Returns the next working day after the supplied date.
+ */
+function nextWorkday(date: Date): Date {
+  const result = new Date(date)
+
+  do {
+    result.setDate(result.getDate() + 1)
+  } while (!isWorkday(result))
+
+  return result
+}
+
+/**
  * Statement Cycle
- * Start = Last working day of previous month
+ *
  * End   = Second-last working day of current month
+ * Start = Next working day after previous month's end
+ *
+ * Example:
+ * Apr: 30 Mar – 29 Apr
+ * May: 30 Apr – 28 May
+ * Jun: 29 May – 29 Jun
+ * Jul: 30 Jun – 30 Jul
  */
 export function getStatementCycleRange(reference: Date): {
   start: string
@@ -69,17 +97,22 @@ export function getStatementCycleRange(reference: Date): {
   const year = reference.getFullYear()
   const month = reference.getMonth()
 
-  // Handle January correctly by letting JS normalize month = -1
-  const start = nthWorkdayFromEnd(year, month - 1, 1)
-  const end = nthWorkdayFromEnd(year, month, 2)
+  // End of previous month's cycle
+  const previousCycleEnd = nthWorkdayFromEnd(year, month - 1, 2)
+
+  // End of current month's cycle
+  const currentCycleEnd = nthWorkdayFromEnd(year, month, 2)
+
+  // Start = first working day after previous cycle end
+  const start = nextWorkday(previousCycleEnd)
 
   return {
     start: toIsoDate(start),
-    end: toIsoDate(end),
+    end: toIsoDate(currentCycleEnd),
     label: `${start.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
-    })} – ${end.toLocaleDateString('en-IN', {
+    })} – ${currentCycleEnd.toLocaleDateString('en-IN', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -88,10 +121,12 @@ export function getStatementCycleRange(reference: Date): {
 }
 
 /**
- * Moves the reference date one calendar month
- * Used for Previous/Next Cycle navigation.
+ * Previous / Next cycle navigation
  */
-export function shiftMonth(reference: Date, direction: 1 | -1): Date {
+export function shiftMonth(
+  reference: Date,
+  direction: 1 | -1
+): Date {
   return new Date(
     reference.getFullYear(),
     reference.getMonth() + direction,
