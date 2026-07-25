@@ -89,7 +89,7 @@ export async function editTransaction(input: EditTransactionInput): Promise<Tran
  *  current authoritative balance and undoing every transaction that happened
  *  strictly after that date. This avoids assuming a zero starting balance or
  *  needing a separate balance-history table. */
-export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: string): Promise<number> {
+export async function fetchBalanceAsOf(accountId: string | undefined, beforeDate: string): Promise<number> {
   let accountsQuery = supabase.from('accounts').select('id, current_balance')
   if (accountId) accountsQuery = accountsQuery.eq('id', accountId)
   const { data: accounts, error: accountsError } = await accountsQuery
