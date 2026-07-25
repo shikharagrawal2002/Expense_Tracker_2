@@ -63,6 +63,8 @@ export function TransactionsPage() {
     datePreset === 'cycle'
       ? previousDate(statementCycle.start)
       : undefined
+
+  console.log("Balance as of:", previousBalanceDate)
   
   const { data: previousMonthBalance } = useBalanceAsOf(
     accountId || undefined,
