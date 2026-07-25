@@ -98,35 +98,16 @@ export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: 
 
   const currentTotal = accounts.reduce((sum, a) => sum + Number(a.current_balance), 0)
 
-  console.log('==============================')
-  console.log('Balance Reconstruction')
-  console.log('Account:', accountId ?? 'ALL')
-  console.log('As Of Date:', asOfDate)
-  console.log('Current Total:', currentTotal)
-  console.log('Cutoff:', `${asOfDate}T23:59:59.999`)
-
   let txnQuery = supabase
   .from('transactions')
   .select('occurred_at, type, amount, account_id, transfer_account_id')
-  .gt('occurred_at', `${asOfDate}T23:59:59.999`)
+  .gte('occurred_at', `${beforeDate}T00:00:00+05:30`)
 
   if (accountId) {
     txnQuery = txnQuery.or(`account_id.eq.${accountId},transfer_account_id.eq.${accountId}`)
   }
 
-  const { data: laterTxns, error: txnError } = await txnQuery
-  console.log('Transactions after cutoff:')
-
-  for (const t of laterTxns ?? []) {
-    console.log({
-      occurred_at: t.occurred_at,
-      type: t.type,
-      amount: Number(t.amount),
-      account_id: t.account_id,
-      transfer_account_id: t.transfer_account_id,
-    })
-  }
-  
+  const { data: laterTxns, error: txnError } = await txnQuery  
   if (txnError) throw txnError
 
   let deltaSinceThen = 0
@@ -136,28 +117,20 @@ export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: 
   
     if (t.type === 'income') {
       deltaSinceThen += amount
-      console.log('+ Income', amount, 'Running Delta =', deltaSinceThen)
     } else if (t.type === 'expense') {
       deltaSinceThen -= amount
-      console.log('- Expense', amount, 'Running Delta =', deltaSinceThen)
     } else if (t.type === 'transfer') {
       if (!accountId) continue
   
       if (t.account_id === accountId) {
         deltaSinceThen -= amount
-        console.log('- Transfer Out', amount, 'Running Delta =', deltaSinceThen)
       }
   
       if (t.transfer_account_id === accountId) {
         deltaSinceThen += amount
-        console.log('+ Transfer In', amount, 'Running Delta =', deltaSinceThen)
       }
     }
   }
-  
-  console.log('Delta Since Then:', deltaSinceThen)
-  console.log('Reconstructed Balance:', currentTotal - deltaSinceThen)
-  console.log('==============================')
   
   return currentTotal - deltaSinceThen
 }
