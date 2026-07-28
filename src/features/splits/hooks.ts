@@ -7,7 +7,7 @@ import {
   setSplitGroupClosed,
   fetchTotalOwed
 } from '@/features/splits/api'
-import type { NewSplitGroup } from '@/lib/supabase/types'
+import type { NewSplitGroup, SplitGroup } from '@/lib/supabase/types'
 
 const SPLITS_KEY = ['split-groups'] as const
 
@@ -19,7 +19,43 @@ export function useCreateSplitGroup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: NewSplitGroup) => createSplitGroup(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: SPLITS_KEY })
+      const previous = queryClient.getQueryData<SplitGroup[]>(SPLITS_KEY)
+      const optimisticGroup: SplitGroup = {
+        id: `optimistic-${Date.now()}`,
+        user_id: 'pending',
+        transaction_id: input.transaction_id ?? null,
+        title: input.title,
+        total_amount: input.total_amount,
+        created_at: new Date().toISOString(),
+        is_closed: false,
+        closed_at: null,
+        participants: input.participants.map((p, index) => ({
+          id: `optimistic-participant-${Date.now()}-${index}`,
+          split_group_id: `optimistic-${Date.now()}`,
+          name: p.name,
+          share_amount: p.share_amount,
+          is_settled: false,
+          settled_at: null,
+        })),
+      }
+
+      queryClient.setQueryData<SplitGroup[]>(SPLITS_KEY, (old) => [optimisticGroup, ...(old ?? [])])
+      return { previous }
+    },
+    onError: (_error, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData<SplitGroup[]>(SPLITS_KEY, context.previous)
+      }
+    },
+    onSuccess: (createdGroup) => {
+      queryClient.setQueryData<SplitGroup[]>(SPLITS_KEY, (old) => {
+        const filtered = (old ?? []).filter((group) => !group.id.startsWith('optimistic-'))
+        return [createdGroup, ...filtered]
+      })
+      queryClient.invalidateQueries({ queryKey: SPLITS_KEY })
+    },
   })
 }
 

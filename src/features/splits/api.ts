@@ -32,16 +32,32 @@ export async function createSplitGroup(input: NewSplitGroup): Promise<SplitGroup
 
   if (input.participants.length > 0) {
     const { error: participantsError } = await supabase.from('split_participants').insert(
-      input.participants.map((p) => ({
+      input.participants.map((p, index) => ({
         split_group_id: group.id,
         name: p.name,
         share_amount: p.share_amount,
+        is_settled: false,
+        settled_at: null,
+        // temporary client-side id for the optimistic UI path; the DB will assign its own id
+        id: `local-participant-${Date.now()}-${index}`,
       })),
     )
     if (participantsError) throw participantsError
   }
 
-  return group as SplitGroup
+  return {
+    ...group,
+    is_closed: false,
+    closed_at: null,
+    participants: input.participants.map((p, index) => ({
+      id: `local-participant-${Date.now()}-${index}`,
+      split_group_id: group.id,
+      name: p.name,
+      share_amount: p.share_amount,
+      is_settled: false,
+      settled_at: null,
+    })),
+  } as SplitGroup
 }
 
 export async function setParticipantSettled(id: string, isSettled: boolean): Promise<SplitParticipant> {
