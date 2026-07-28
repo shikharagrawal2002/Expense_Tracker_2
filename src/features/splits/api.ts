@@ -10,6 +10,7 @@ export async function fetchSplitGroups(): Promise<SplitGroup[]> {
     .select(SELECT_WITH_JOINS)
     .order('created_at', { ascending: false })
   if (error) throw error
+  console.log('fetchSplitGroups data', data)
   return data as unknown as SplitGroup[]
 }
 
