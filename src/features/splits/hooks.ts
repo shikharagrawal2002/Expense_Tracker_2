@@ -4,6 +4,7 @@ import {
   createSplitGroup,
   setParticipantSettled,
   deleteSplitGroup,
+  setSplitGroupClosed,
   fetchTotalOwed,
   fetchOwedByPerson,
 } from '@/features/splits/api'
@@ -35,6 +36,14 @@ export function useDeleteSplitGroup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteSplitGroup(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
+  })
+}
+
+export function useSetSplitGroupClosed() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, isClosed }: { id: string; isClosed: boolean }) => setSplitGroupClosed(id, isClosed),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
   })
 }
