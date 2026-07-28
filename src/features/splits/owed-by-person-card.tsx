@@ -10,6 +10,7 @@ import {
 
 export function OwedByPersonCard() {
   const { data: groups, isLoading } = useSplitGroups()
+  console.log('groups', groups)
   const closeSplit = useSetSplitGroupClosed()
 
   if (isLoading) return <Skeleton className="h-24" />
