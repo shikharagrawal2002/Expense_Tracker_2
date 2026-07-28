@@ -59,7 +59,6 @@ export interface Transaction {
   import_batch_id: string | null
   created_at: string
   updated_at: string
-  // convenience joins, populated by the API layer's select() when available
   account?: Pick<Account, 'id' | 'name' | 'color' | 'icon'>
   transfer_account?: Pick<Account, 'id' | 'name' | 'color' | 'icon'>
   category?: Pick<Category, 'id' | 'name' | 'color' | 'icon'>
@@ -133,6 +132,8 @@ export interface SplitGroup {
   title: string
   total_amount: number
   created_at: string
+  is_closed: boolean
+  closed_at: string | null
   // convenience joins
   transaction?: Pick<Transaction, 'id' | 'amount' | 'occurred_at' | 'notes' | 'currency'> & {
     account?: Pick<Account, 'id' | 'name'>
