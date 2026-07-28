@@ -5,8 +5,7 @@ import {
   setParticipantSettled,
   deleteSplitGroup,
   setSplitGroupClosed,
-  fetchTotalOwed,
-  fetchOwedByPerson,
+  fetchTotalOwed
 } from '@/features/splits/api'
 import type { NewSplitGroup } from '@/lib/supabase/types'
 
@@ -52,9 +51,4 @@ export function useSetSplitGroupClosed() {
  *  prefix as the splits list so settling/creating a split invalidates this too. */
 export function useTotalOwed() {
   return useQuery({ queryKey: [...SPLITS_KEY, 'total-owed'], queryFn: fetchTotalOwed })
-}
-
-/** Per-person breakdown of who owes what, for the Splits page summary. */
-export function useOwedByPerson() {
-  return useQuery({ queryKey: [...SPLITS_KEY, 'owed-by-person'], queryFn: fetchOwedByPerson })
 }
