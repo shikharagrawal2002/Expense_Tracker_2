@@ -1,18 +1,23 @@
-import { Plus, Users, Trash2, Check } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Users, Trash2, Check, Archive, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
 import { formatCurrency, cn } from '@/lib/utils'
-import { useSplitGroups, useSetParticipantSettled, useDeleteSplitGroup } from '@/features/splits/hooks'
+import { useSplitGroups, useSetParticipantSettled, useDeleteSplitGroup, useSetSplitGroupClosed } from '@/features/splits/hooks'
 import { SplitFormDialog } from '@/features/splits/split-form-dialog'
 import { OwedByPersonCard } from '@/features/splits/owed-by-person-card'
 
 export function SplitsPage() {
+  const [tab, setTab] = useState<'open' | 'closed'>('open')
   const { data: splitGroups, isLoading } = useSplitGroups()
   const setParticipantSettled = useSetParticipantSettled()
   const deleteSplitGroup = useDeleteSplitGroup()
+  const setSplitGroupClosed = useSetSplitGroupClosed()
+
+  const visibleGroups = splitGroups?.filter((g) => (tab === 'open' ? !g.is_closed : g.is_closed))
 
   return (
     <div className="max-w-[800px] space-y-5">
@@ -33,6 +38,21 @@ export function SplitsPage() {
 
       <OwedByPersonCard />
 
+      <div className="flex gap-1.5 surface-2 rounded-lg p-1 w-fit">
+        {(['open', 'closed'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-colors',
+              tab === t ? 'surface shadow-sm' : 'text-muted',
+            )}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
       {isLoading && (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -41,27 +61,31 @@ export function SplitsPage() {
         </div>
       )}
 
-      {!isLoading && splitGroups?.length === 0 && (
+      {!isLoading && visibleGroups?.length === 0 && (
         <EmptyState
           icon={Users}
-          title="No splits yet"
-          description="Split an expense with friends or family and keep track of who's paid you back."
+          title={tab === 'open' ? 'No open splits' : 'No closed splits'}
+          description={
+            tab === 'open'
+              ? "Split an expense with friends or family and keep track of who's paid you back."
+              : "Splits you've closed will show up here, still fully intact — closing just clears them off your main list."
+          }
         />
       )}
 
       {!isLoading &&
-        splitGroups?.map((group) => {
+        visibleGroups?.map((group) => {
           const settledCount = group.participants?.filter((p) => p.is_settled).length ?? 0
           const totalParticipants = group.participants?.length ?? 0
           const owedTotal =
             group.participants?.filter((p) => !p.is_settled).reduce((sum, p) => sum + p.share_amount, 0) ?? 0
 
           return (
-            <Card key={group.id}>
+            <Card key={group.id} className={group.is_closed ? 'opacity-70' : undefined}>
               <CardContent className="pt-4 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-medium truncate">{group.title}</p>
+                    <p className="font-display text-base font-semibold truncate">{group.title}</p>
                     <p className="text-xs text-muted">
                       {new Date(group.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       {group.transaction && (
@@ -74,9 +98,21 @@ export function SplitsPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant={owedTotal === 0 ? 'positive' : 'default'}>
-                      {owedTotal === 0 ? 'All settled' : `${formatCurrency(owedTotal)} pending`}
-                    </Badge>
+                    {group.is_closed ? (
+                      <Badge>Closed</Badge>
+                    ) : (
+                      <Badge variant={owedTotal === 0 ? 'positive' : 'default'}>
+                        {owedTotal === 0 ? 'All settled' : `${formatCurrency(owedTotal)} pending`}
+                      </Badge>
+                    )}
+                    <button
+                      onClick={() => setSplitGroupClosed.mutate({ id: group.id, isClosed: !group.is_closed })}
+                      className="rounded-lg p-1.5 text-muted hover:surface-2 transition-colors"
+                      aria-label={group.is_closed ? 'Reopen split' : 'Close split'}
+                      title={group.is_closed ? 'Reopen split' : 'Close split'}
+                    >
+                      {group.is_closed ? <RotateCcw className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+                    </button>
                     <button
                       onClick={() => deleteSplitGroup.mutate(group.id)}
                       className="rounded-lg p-1.5 text-muted hover:bg-[var(--color-negative-500)]/10 hover:text-[var(--color-negative-600)] transition-colors"
