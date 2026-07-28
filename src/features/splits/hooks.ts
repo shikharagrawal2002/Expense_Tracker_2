@@ -12,6 +12,7 @@ import type { NewSplitGroup, SplitGroup } from '@/lib/supabase/types'
 const SPLITS_KEY = ['split-groups'] as const
 
 export function useSplitGroups() {
+  console.log('useSplitGroups called', useQuery({ queryKey: SPLITS_KEY, queryFn: fetchSplitGroups }))
   return useQuery({ queryKey: SPLITS_KEY, queryFn: fetchSplitGroups })
 }
 
