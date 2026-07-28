@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase/client'
 import type { SplitGroup, NewSplitGroup, SplitParticipant } from '@/lib/supabase/types'
 
 const SELECT_WITH_JOINS =
-  '*, transaction:transactions(id,amount,occurred_at,notes,currency,account:accounts(id,name)), participants:split_participants(*)'
+  '*, transaction:transactions(id,amount,occurred_at,notes,currency,account:accounts!transactions_account_id_fkey(id,name)), participants:split_participants(*)'
 
 export async function fetchSplitGroups(): Promise<SplitGroup[]> {
   const { data, error } = await supabase
@@ -10,7 +10,6 @@ export async function fetchSplitGroups(): Promise<SplitGroup[]> {
     .select(SELECT_WITH_JOINS)
     .order('created_at', { ascending: false })
   if (error) throw error
-  console.log('fetchSplitGroups data', data)
   return data as unknown as SplitGroup[]
 }
 
