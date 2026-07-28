@@ -37,33 +37,33 @@ export function OwedByPersonCard() {
 
       {outstanding.map((split) => (
         <Card key={`${split.groupId}-${split.person}`}>
-          <CardContent className="flex items-center justify-between py-4">
+          <CardHeader>
+            <CardTitle>{split.title}</CardTitle>
+          </CardHeader>
+
+          <CardContent className="flex items-center justify-between">
             <div>
-              <p className="font-medium">{split.title}</p>
-              <p className="text-sm text-muted">
+              <p className="text-sm text-muted-foreground">
                 {split.person} owes you
+              </p>
+              <p className="font-semibold">
+                {formatCurrency(split.amount)}
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <span className="font-semibold">
-                {formatCurrency(split.amount)}
-              </span>
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  closeSplit.mutate({
-                    id: split.groupId,
-                    isClosed: true,
-                  })
-                }
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Close
-              </Button>
-            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                closeSplit.mutate({
+                  id: split.groupId,
+                  isClosed: true,
+                })
+              }
+            >
+              <Check className="mr-2 h-4 w-4" />
+              Close
+            </Button>
           </CardContent>
         </Card>
       ))}
