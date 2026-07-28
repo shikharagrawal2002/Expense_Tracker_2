@@ -60,6 +60,16 @@ export async function deleteSplitGroup(id: string): Promise<void> {
   if (error) throw error
 }
 
+/** Closes (or reopens) a split without deleting it — keeps the record and
+ *  participant history, just marks it done and out of the default view. */
+export async function setSplitGroupClosed(id: string, isClosed: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('split_groups')
+    .update({ is_closed: isClosed, closed_at: isClosed ? new Date().toISOString() : null })
+    .eq('id', id)
+  if (error) throw error
+}
+
 /** Total across every unsettled participant share, across all your splits —
  *  RLS on split_participants already scopes this to groups you own, via the
  *  "own split_participants" policy joining through split_groups.user_id. */
