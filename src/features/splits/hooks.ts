@@ -20,10 +20,7 @@ export function useCreateSplitGroup() {
   return useMutation({
     mutationFn: (input: NewSplitGroup) => createSplitGroup(input),
     onSuccess: (createdGroup) => {
-      queryClient.setQueryData<SplitGroup[]>(SPLITS_KEY, (old) => {
-        const filtered = (old ?? []).filter((group) => group.id !== createdGroup.id)
-        return [createdGroup, ...filtered]
-      })
+      queryClient.setQueryData<SplitGroup[]>(SPLITS_KEY, (old) => [createdGroup, ...(old ?? [])])
       queryClient.invalidateQueries({ queryKey: SPLITS_KEY })
     },
   })

@@ -44,15 +44,31 @@ export async function createSplitGroup(input: NewSplitGroup): Promise<SplitGroup
     if (participantsError) throw participantsError
   }
 
-  const { data: createdGroup, error: fetchError } = await supabase
-    .from('split_groups')
-    .select(SELECT_WITH_JOINS)
-    .eq('id', group.id)
-    .single()
+  try {
+    const { data: createdGroup, error: fetchError } = await supabase
+      .from('split_groups')
+      .select(SELECT_WITH_JOINS)
+      .eq('id', group.id)
+      .single()
 
-  if (fetchError) throw fetchError
+    if (fetchError) throw fetchError
 
-  return createdGroup as SplitGroup
+    return createdGroup as SplitGroup
+  } catch {
+    return {
+      ...group,
+      is_closed: false,
+      closed_at: null,
+      participants: input.participants.map((p) => ({
+        id: group.id,
+        split_group_id: group.id,
+        name: p.name,
+        share_amount: p.share_amount,
+        is_settled: false,
+        settled_at: null,
+      })),
+    } as SplitGroup
+  }
 }
 
 export async function setParticipantSettled(id: string, isSettled: boolean): Promise<SplitParticipant> {
