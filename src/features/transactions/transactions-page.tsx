@@ -52,10 +52,10 @@ export function TransactionsPage() {
   const previousBalanceDate =
     datePreset === 'cycle'
       ? statementCycle.start
-      : undefined
+      : datePreset === 'this-month'
+        ? calendarMonth.start
+        : undefined
 
-  console.log("Balance as of:", previousBalanceDate)
-  
   const { data: previousMonthBalance } = useBalanceAsOf(
     accountId || undefined,
     previousBalanceDate,
@@ -130,9 +130,9 @@ export function TransactionsPage() {
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          {datePreset === 'cycle' && previousMonthBalance !== undefined && (
+          {(datePreset === 'this-month' || datePreset === 'cycle') && previousMonthBalance !== undefined && (
             <span className="ml-2 text-muted">
-              Previous month final balance:{' '}
+              {datePreset === 'cycle' ? 'Previous month final balance:' : 'Previous month opening balance:'}{' '}
               <span className="font-medium text-inherit">{formatCurrency(previousMonthBalance)}</span>
             </span>
           )}

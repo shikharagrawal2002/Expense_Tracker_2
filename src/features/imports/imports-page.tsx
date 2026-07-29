@@ -91,7 +91,7 @@ export function ImportsPage() {
         account_id: accountId,
         type: r.direction === 'credit' ? 'income' : 'expense',
         amount: r.amount,
-        occurred_at: r.date,
+        occurred_at: `${r.date}T00:00:00+05:30`,
         category_id: r.categoryId || undefined,
         notes: r.description,
         currency: account?.currency,
