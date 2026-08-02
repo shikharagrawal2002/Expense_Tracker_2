@@ -1,5 +1,6 @@
 import { Trash2, Pencil, ArrowRight, ArrowLeftRight, Users } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/skeleton'
 import { useDeleteTransaction } from '@/features/transactions/hooks'
 import { TransactionFormDialog } from '@/features/transactions/transaction-form-dialog'
 import { SplitFormDialog } from '@/features/splits/split-form-dialog'
@@ -81,6 +82,12 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
           )}
         </p>
       </div>
+      {txn.split_status && (
+        <Badge variant={txn.split_status === 'open' ? 'default' : 'warning'} className="shrink-0">
+          <Users className="h-3 w-3" />
+          Split · {txn.split_status === 'open' ? 'Open' : 'Closed'}
+        </Badge>
+      )}
       <p className={cn('text-sm font-medium num shrink-0', amountColorClass)}>
         {signedAmount > 0 ? '+' : ''}
         {formatCurrency(signedAmount, txn.currency)}

@@ -20,7 +20,11 @@ export function useCreateSplitGroup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: NewSplitGroup) => createSplitGroup(input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SPLITS_KEY })
+      // The linked transaction's split_status changed.
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
   })
 }
 
@@ -36,7 +40,11 @@ export function useDeleteSplitGroup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteSplitGroup(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SPLITS_KEY })
+      // The linked transaction's split_status was cleared.
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
   })
 }
 
@@ -44,7 +52,11 @@ export function useSetSplitGroupClosed() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, isClosed }: { id: string; isClosed: boolean }) => setSplitGroupClosed(id, isClosed),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SPLITS_KEY })
+      // The linked transaction's split_status flipped open <-> closed.
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+    },
   })
 }
 

@@ -57,6 +57,8 @@ export interface Transaction {
   is_reconciled: boolean
   attachment_url: string | null
   import_batch_id: string | null
+  /** 'open' | 'closed' when this expense is linked to a split group; null otherwise */
+  split_status: 'open' | 'closed' | null
   created_at: string
   updated_at: string
   // convenience joins, populated by the API layer's select() when available
@@ -66,7 +68,7 @@ export interface Transaction {
 }
 
 export type NewTransaction = Pick<Transaction, 'account_id' | 'type' | 'amount' | 'occurred_at'> &
-  Partial<Pick<Transaction, 'category_id' | 'transfer_account_id' | 'notes' | 'location' | 'currency' | 'import_batch_id'>>
+  Partial<Pick<Transaction, 'category_id' | 'transfer_account_id' | 'notes' | 'location' | 'currency' | 'import_batch_id' | 'split_status'>>
 
 // ----------------------------------------------------------------------------
 // Statement imports (bank statement + credit card statement uploads)

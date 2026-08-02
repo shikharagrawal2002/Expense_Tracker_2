@@ -41,6 +41,16 @@ export async function createSplitGroup(input: NewSplitGroup): Promise<SplitGroup
     if (participantsError) throw participantsError
   }
 
+  // Flag the linked expense transaction as part of an open split, so the
+  // Transactions list can show it at a glance. Only expenses can be splits;
+  // the edit_transaction() RPC clears the flag if a type is changed away.
+  if (input.transaction_id) {
+    await supabase
+      .from('transactions')
+      .update({ split_status: 'open' })
+      .eq('id', input.transaction_id)
+  }
+
   return group as SplitGroup
 }
 
@@ -56,18 +66,40 @@ export async function setParticipantSettled(id: string, isSettled: boolean): Pro
 }
 
 export async function deleteSplitGroup(id: string): Promise<void> {
+  // Read the linked transaction first so we can clear its split_status.
+  // Deleting the group cascades to split_groups.transaction_id (on delete
+  // cascade), so we must capture it before the delete.
+  const { data: group } = await supabase.from('split_groups').select('transaction_id').eq('id', id).single()
+
   const { error } = await supabase.from('split_groups').delete().eq('id', id)
   if (error) throw error
+
+  if (group?.transaction_id) {
+    await supabase
+      .from('transactions')
+      .update({ split_status: null })
+      .eq('id', group.transaction_id)
+  }
 }
 
 /** Closes (or reopens) a split without deleting it — keeps the record and
  *  participant history, just marks it done and out of the default view. */
 export async function setSplitGroupClosed(id: string, isClosed: boolean): Promise<void> {
+  // Read the linked transaction first so we can keep its split_status in sync.
+  const { data: group } = await supabase.from('split_groups').select('transaction_id').eq('id', id).single()
+
   const { error } = await supabase
     .from('split_groups')
     .update({ is_closed: isClosed, closed_at: isClosed ? new Date().toISOString() : null })
     .eq('id', id)
   if (error) throw error
+
+  if (group?.transaction_id) {
+    await supabase
+      .from('transactions')
+      .update({ split_status: isClosed ? 'closed' : 'open' })
+      .eq('id', group.transaction_id)
+  }
 }
 
 /** Total across every unsettled participant share, across all your splits —
