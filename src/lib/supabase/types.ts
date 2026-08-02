@@ -59,6 +59,7 @@ export interface Transaction {
   import_batch_id: string | null
   created_at: string
   updated_at: string
+  // convenience joins, populated by the API layer's select() when available
   account?: Pick<Account, 'id' | 'name' | 'color' | 'icon'>
   transfer_account?: Pick<Account, 'id' | 'name' | 'color' | 'icon'>
   category?: Pick<Category, 'id' | 'name' | 'color' | 'icon'>
@@ -112,7 +113,7 @@ export type NewCardStatement = Pick<CardStatement, 'account_id' | 'statement_mon
 // supabase/functions/parse-statement/lib/types.ts)
 // ----------------------------------------------------------------------------
 
-export type BankProvider = 'hsbc' | 'idfc' | 'slice' | 'generic'
+export type BankProvider = 'hsbc' | 'idfc' | 'slice' | 'icici' | 'hdfc' | 'sbi' | 'yesbank' | 'indusind' | 'axis' | 'generic'
 
 export interface SplitParticipant {
   id: string

@@ -33,21 +33,32 @@ export async function fetchBudgets(periodMonth: string): Promise<Budget[]> {
   return data as unknown as Budget[]
 }
 
-/** Sum of expense transactions per category for the given month, e.g. { [categoryId]: 4200 } */
+/** Sum of expense transactions per category for the given month, e.g. { [categoryId]: 4200 } —
+ *  netted for splits, same as the category breakdown chart: money other people
+ *  owe you back for a shared expense isn't really your own spending against the budget. */
 export async function fetchSpendByCategory(periodMonth: string): Promise<Record<string, number>> {
   const { start, end } = monthRange(periodMonth)
   const { data, error } = await supabase
     .from('transactions')
-    .select('category_id, amount')
+    .select('category_id, amount, splits:split_groups(participants:split_participants(share_amount))')
     .eq('type', 'expense')
     .gte('occurred_at', start)
     .lt('occurred_at', end)
   if (error) throw error
 
   const totals: Record<string, number> = {}
-  for (const row of data as { category_id: string | null; amount: number }[]) {
+  for (const row of data as unknown as {
+    category_id: string | null
+    amount: number
+    splits: { participants: { share_amount: number }[] }[] | null
+  }[]) {
     if (!row.category_id) continue
-    totals[row.category_id] = (totals[row.category_id] ?? 0) + row.amount
+    const splitShares = (row.splits ?? []).reduce(
+      (sum, group) => sum + (group.participants ?? []).reduce((s, p) => s + Number(p.share_amount), 0),
+      0,
+    )
+    const netAmount = Math.max(0, row.amount - splitShares)
+    totals[row.category_id] = (totals[row.category_id] ?? 0) + netAmount
   }
   return totals
 }

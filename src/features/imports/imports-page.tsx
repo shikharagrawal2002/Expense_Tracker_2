@@ -15,9 +15,15 @@ import { toReviewRow, type ImportKind, type ReviewRow } from '@/features/imports
 import type { CardStatementSummary, NewTransaction, BankProvider } from '@/lib/supabase/types'
 
 const BANK_OPTIONS: Array<{ value: BankProvider; label: string }> = [
+  { value: 'axis', label: 'Axis Bank' },
+  { value: 'hdfc', label: 'HDFC Bank' },
   { value: 'hsbc', label: 'HSBC' },
+  { value: 'icici', label: 'ICICI Bank' },
   { value: 'idfc', label: 'IDFC First Bank' },
+  { value: 'indusind', label: 'IndusInd Bank' },
+  { value: 'sbi', label: 'SBI Card' },
   { value: 'slice', label: 'Slice' },
+  { value: 'yesbank', label: 'YES Bank' },
 ]
 
 const TABS: Array<{ key: ImportKind; label: string; icon: typeof Landmark; hint: string }> = [
@@ -91,6 +97,13 @@ export function ImportsPage() {
         account_id: accountId,
         type: r.direction === 'credit' ? 'income' : 'expense',
         amount: r.amount,
+        // r.date is a bare "yyyy-mm-dd" string from the parser. Sending that
+        // with no timezone marker leaves Postgres to guess — if the DB
+        // session's timezone isn't UTC, "2026-07-01" can get interpreted as
+        // midnight in THAT timezone and converted to a different UTC instant
+        // (e.g. stored as "2026-06-30T18:30:00Z" if the session is IST),
+        // which then falls outside a "July" filter entirely. Anchoring to an
+        // explicit +05:30 makes the intended local midnight unambiguous.
         occurred_at: `${r.date}T00:00:00+05:30`,
         category_id: r.categoryId || undefined,
         notes: r.description,

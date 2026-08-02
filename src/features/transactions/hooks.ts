@@ -54,15 +54,10 @@ export function useDeleteTransaction() {
 
 /** The closing balance as of the end of `asOfDate` (yyyy-mm-dd), for the given
  *  account or, if omitted, combined across all accounts. */
-export function useBalanceAsOf(accountId: string | undefined, beforeDate: string | undefined) {
-  console.log(useQuery({
-    queryKey: ['balance-as-of', accountId ?? 'all', beforeDate],
-    queryFn: () => fetchBalanceAsOf(accountId, beforeDate as string),
-    enabled: !!beforeDate,
-  }))
+export function useBalanceAsOf(accountId: string | undefined, asOfDate: string | undefined) {
   return useQuery({
-    queryKey: ['balance-as-of', accountId ?? 'all', beforeDate],
-    queryFn: () => fetchBalanceAsOf(accountId, beforeDate as string),
-    enabled: !!beforeDate,
+    queryKey: ['balance-as-of', accountId ?? 'all', asOfDate],
+    queryFn: () => fetchBalanceAsOf(accountId, asOfDate as string),
+    enabled: !!asOfDate,
   })
 }

@@ -5,14 +5,14 @@ import {
   setParticipantSettled,
   deleteSplitGroup,
   setSplitGroupClosed,
-  fetchTotalOwed
+  fetchTotalOwed,
+  fetchOwedByPerson,
 } from '@/features/splits/api'
-import type { NewSplitGroup, SplitGroup } from '@/lib/supabase/types'
+import type { NewSplitGroup } from '@/lib/supabase/types'
 
 const SPLITS_KEY = ['split-groups'] as const
 
 export function useSplitGroups() {
-  console.log('useSplitGroups called', useQuery({ queryKey: SPLITS_KEY, queryFn: fetchSplitGroups }))
   return useQuery({ queryKey: SPLITS_KEY, queryFn: fetchSplitGroups })
 }
 
@@ -20,10 +20,7 @@ export function useCreateSplitGroup() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: NewSplitGroup) => createSplitGroup(input),
-    onSuccess: (createdGroup) => {
-      queryClient.setQueryData<SplitGroup[]>(SPLITS_KEY, (old) => [createdGroup, ...(old ?? [])])
-      queryClient.invalidateQueries({ queryKey: SPLITS_KEY })
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
   })
 }
 
@@ -55,4 +52,9 @@ export function useSetSplitGroupClosed() {
  *  prefix as the splits list so settling/creating a split invalidates this too. */
 export function useTotalOwed() {
   return useQuery({ queryKey: [...SPLITS_KEY, 'total-owed'], queryFn: fetchTotalOwed })
+}
+
+/** Per-person breakdown of who owes what, for the Splits page summary. */
+export function useOwedByPerson() {
+  return useQuery({ queryKey: [...SPLITS_KEY, 'owed-by-person'], queryFn: fetchOwedByPerson })
 }

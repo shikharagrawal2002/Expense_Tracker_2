@@ -28,8 +28,6 @@ export function TransactionsPage() {
   const calendarMonth = useMemo(() => getCalendarMonthRange(cycleReference), [cycleReference])
   const statementCycle = useMemo(() => getStatementCycleRange(cycleReference), [cycleReference])
 
-  console.log(statementCycle)
-  
   const { dateFrom, dateTo } = useMemo(() => {
     if (datePreset === 'this-month') return { dateFrom: calendarMonth.start, dateTo: calendarMonth.end }
     if (datePreset === 'cycle') return { dateFrom: statementCycle.start, dateTo: statementCycle.end }
@@ -49,18 +47,13 @@ export function TransactionsPage() {
     dateTo,
   })
 
-  const previousBalanceDate =
-    datePreset === 'cycle'
-      ? statementCycle.start
-      : datePreset === 'this-month'
-        ? calendarMonth.start
-        : undefined
-
+  // "Previous month final balance": the closing balance as of the start of the
+  // statement cycle (which is, by definition, the last day of the previous month).
   const { data: previousMonthBalance } = useBalanceAsOf(
     accountId || undefined,
-    previousBalanceDate,
+    datePreset === 'cycle' ? statementCycle.start : undefined,
   )
-  
+
   return (
     <div className="max-w-[1000px] space-y-5">
       <div className="flex items-start justify-between">
@@ -130,9 +123,9 @@ export function TransactionsPage() {
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          {(datePreset === 'this-month' || datePreset === 'cycle') && previousMonthBalance !== undefined && (
+          {datePreset === 'cycle' && previousMonthBalance !== undefined && (
             <span className="ml-2 text-muted">
-              {datePreset === 'cycle' ? 'Previous month final balance:' : 'Previous month opening balance:'}{' '}
+              Previous month final balance:{' '}
               <span className="font-medium text-inherit">{formatCurrency(previousMonthBalance)}</span>
             </span>
           )}

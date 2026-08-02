@@ -23,5 +23,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "supabase/functions/parse-statement/lib/client.ts", "supabase/functions/parse-statement/lib/types.ts"]
+  "include": ["src"]
 }

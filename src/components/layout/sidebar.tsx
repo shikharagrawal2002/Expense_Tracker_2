@@ -16,6 +16,7 @@ import {
   Sparkles,
   UploadCloud,
   Users,
+  CreditCard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -32,6 +33,7 @@ const NAV_SECTIONS = [
     items: [
       { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
       { to: '/accounts', label: 'Accounts', icon: Wallet },
+      { to: '/credit-cards', label: 'Credit cards', icon: CreditCard },
       { to: '/categories', label: 'Categories', icon: Tags },
       { to: '/imports', label: 'Import statements', icon: UploadCloud },
       { to: '/splits', label: 'Splits', icon: Users },

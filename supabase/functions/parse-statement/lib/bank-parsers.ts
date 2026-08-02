@@ -17,7 +17,7 @@ interface ParsedTransaction {
   sourceLine: string
 }
 
-export type BankProvider = 'hsbc' | 'idfc' | 'slice' | 'generic'
+export type BankProvider = 'hsbc' | 'idfc' | 'slice' | 'icici' | 'hdfc' | 'sbi' | 'yesbank' | 'indusind' | 'axis' | 'generic'
 
 const HEADER_KEYWORDS = {
   date: ['date', 'txn date', 'transaction date', 'value date', 'posting date'],
@@ -52,6 +52,12 @@ const PROVIDER_HEADER_ALIASES: Record<BankProvider, Partial<typeof HEADER_KEYWOR
     direction: ['direction'],
   },
   idfc: {},
+  icici: {},
+  hdfc: {},
+  sbi: {},
+  yesbank: {},
+  indusind: {},
+  axis: {},
   generic: {},
 }
 
@@ -306,6 +312,108 @@ function finalizeBlockByBalanceDelta(
   }
 }
 
+/** Each of these issuers marks debit/credit differently on the amount itself —
+ *  verified against a real statement from each, cross-checked against that
+ *  statement's own printed Purchases/Payments totals until the net effect
+ *  matched exactly:
+ *  - icici: bare positive number ("2,587.00") = debit; "CR" suffix = credit
+ *  - hdfc: a "C" character stands in for the ₹ symbol in this PDF's embedded
+ *    font (confirmed at the raw text level, not just visually) — bare "C 380.00"
+ *    = debit, a "+" appearing before it = credit
+ *  - sbi: single-letter suffix, "D" or "C" ("999.00 D", "68.00 C")
+ *  - yesbank / indusind / axis: two-letter suffix, "Dr"/"DR" or "Cr"/"CR"
+ */
+interface SuffixDirectionConfig {
+  regex: RegExp
+  /** Which capture group holds the numeric amount — usually group 1, but
+   *  HDFC's pattern needs group 1 for the optional "+" and group 2 for the
+   *  actual number. */
+  amountGroup: 1 | 2
+  getDirection: (match: RegExpMatchArray) => 'debit' | 'credit'
+  /** SBI statements sometimes list a fee and its tax as two separate amounts
+   *  within what looks like one continuation block (no date of their own) —
+   *  so SBI needs every match in the block treated as its own transaction,
+   *  not just the first. Every other issuer here has exactly one real amount
+   *  per block (Axis's second "cashback earned" number is deliberately
+   *  ignored by only taking the first match). */
+  multiMatch?: boolean
+}
+
+const SUFFIX_DIRECTION_CONFIGS: Partial<Record<BankProvider, SuffixDirectionConfig>> = {
+  icici: {
+    regex: /(-?[\d,]+\.\d{2})\s*(CR)?/,
+    amountGroup: 1,
+    getDirection: (m) => (m[2] ? 'credit' : 'debit'),
+  },
+  hdfc: {
+    regex: /(\+)?\s*C\s?([\d,]+\.\d{2})/,
+    amountGroup: 2,
+    getDirection: (m) => (m[1] === '+' ? 'credit' : 'debit'),
+  },
+  sbi: {
+    regex: /([\d,]+\.\d{2})\s*([CD])\b/,
+    amountGroup: 1,
+    getDirection: (m) => (m[2] === 'C' ? 'credit' : 'debit'),
+    multiMatch: true,
+  },
+  yesbank: {
+    regex: /([\d,]+\.\d{2})\s*(Dr|DR|Cr|CR)\b/,
+    amountGroup: 1,
+    getDirection: (m) => (m[2].toLowerCase() === 'cr' ? 'credit' : 'debit'),
+  },
+  indusind: {
+    regex: /([\d,]+\.\d{2})\s*(Dr|DR|Cr|CR)\b/,
+    amountGroup: 1,
+    getDirection: (m) => (m[2].toLowerCase() === 'cr' ? 'credit' : 'debit'),
+  },
+  axis: {
+    regex: /([\d,]+\.\d{2})\s*(Dr|DR|Cr|CR)\b/,
+    amountGroup: 1,
+    getDirection: (m) => (m[2].toLowerCase() === 'cr' ? 'credit' : 'debit'),
+  },
+}
+
+/** A real transaction's amount should appear shortly after its date, not
+ *  buried deep inside paragraphs of unrelated summary/promotional text. Some
+ *  statements (IndusInd in particular) extract their sidebar figures — due
+ *  date, credit limit, etc. — completely out of visual order relative to the
+ *  actual transaction table, and a plain-looking date sitting alone on its own
+ *  line (really just a label's value, not a transaction) can otherwise
+ *  accidentally absorb an unrelated figure like "Total Amount Due" from deep
+ *  in the accumulated noise before the next real transaction date arrives.
+ *  Capping how far into the block we'll look filters those out. */
+const SUFFIX_MATCH_PROXIMITY_LIMIT = 200
+
+function finalizeBlockBySuffixDirection(
+  dateIso: string,
+  text: string,
+  config: SuffixDirectionConfig,
+): ParsedTransaction[] {
+  const regex = new RegExp(config.regex.source, config.multiMatch ? 'g' : undefined)
+  const matches = config.multiMatch ? [...text.matchAll(regex)] : ([text.match(regex)].filter((m): m is RegExpMatchArray => m !== null))
+
+  const rows: ParsedTransaction[] = []
+  for (const m of matches) {
+    if (m.index !== undefined && m.index > SUFFIX_MATCH_PROXIMITY_LIMIT) continue
+    const amount = parseAmount(m[config.amountGroup])
+    if (amount === null || amount === 0) continue
+
+    let description = text.replace(/\b\d{10,}\b/g, '')
+    description = description.replace(/\s+/g, ' ').trim()
+
+    rows.push({
+      date: dateIso,
+      description: description || '(no description)',
+      amount: Math.abs(amount),
+      direction: config.getDirection(m),
+      isDuplicate: false,
+      suggestedCategory: suggestCategory(description),
+      sourceLine: text,
+    })
+  }
+  return rows
+}
+
 /** Groups PDF text lines into per-transaction blocks (a new block starts
  *  whenever a line begins with a recognizable date) and extracts one
  *  transaction per block. This handles both plain single-line statements and
@@ -319,6 +427,7 @@ function parseTextLines(lines: string[], warnings: string[], provider?: BankProv
   const headerIdx = findTableHeaderIndex(lines)
   const startFrom = headerIdx === -1 ? 0 : headerIdx + 1
   const useBalanceDelta = provider === 'idfc'
+  const suffixConfig = provider ? SUFFIX_DIRECTION_CONFIGS[provider] : undefined
 
   const out: ParsedTransaction[] = []
   let current: { date: string; text: string } | null = null
@@ -326,7 +435,9 @@ function parseTextLines(lines: string[], warnings: string[], provider?: BankProv
 
   function flush() {
     if (!current) return
-    if (useBalanceDelta) {
+    if (suffixConfig) {
+      out.push(...finalizeBlockBySuffixDirection(current.date, current.text, suffixConfig))
+    } else if (useBalanceDelta) {
       const { row, nextBalance } = finalizeBlockByBalanceDelta(current.date, current.text, runningBalance)
       if (row) out.push(row)
       runningBalance = nextBalance

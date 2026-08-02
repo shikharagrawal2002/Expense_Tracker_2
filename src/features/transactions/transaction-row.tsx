@@ -13,9 +13,14 @@ interface TransactionRowProps {
    *  (shows positive) — a transfer has no inherent sign on its own, it depends
    *  on which side of it you're looking from. */
   viewAccountId?: string
+  /** Which transaction types show the "add to split" button. Defaults to
+   *  expense-only (the common case — splitting a bill you paid). The Credit
+   *  Cards page passes both 'income' and 'expense', since a credit-card
+   *  refund/cashback split among people is just as real as a bill split. */
+  splitButtonTypes?: Array<Transaction['type']>
 }
 
-export function TransactionRow({ txn, viewAccountId }: TransactionRowProps) {
+export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expense'] }: TransactionRowProps) {
   const deleteTransaction = useDeleteTransaction()
   const color = txn.category?.color ?? '#94a3b8'
 
@@ -81,7 +86,7 @@ export function TransactionRow({ txn, viewAccountId }: TransactionRowProps) {
         {formatCurrency(signedAmount, txn.currency)}
       </p>
       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        {txn.type === 'expense' && (
+        {splitButtonTypes.includes(txn.type) && (
           <SplitFormDialog
             presetTransaction={txn}
             trigger={

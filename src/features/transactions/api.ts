@@ -89,7 +89,7 @@ export async function editTransaction(input: EditTransactionInput): Promise<Tran
  *  current authoritative balance and undoing every transaction that happened
  *  strictly after that date. This avoids assuming a zero starting balance or
  *  needing a separate balance-history table. */
-export async function fetchBalanceAsOf(accountId: string | undefined, beforeDate: string): Promise<number> {
+export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: string): Promise<number> {
   let accountsQuery = supabase.from('accounts').select('id, current_balance')
   if (accountId) accountsQuery = accountsQuery.eq('id', accountId)
   const { data: accounts, error: accountsError } = await accountsQuery
@@ -99,39 +99,33 @@ export async function fetchBalanceAsOf(accountId: string | undefined, beforeDate
   const currentTotal = accounts.reduce((sum, a) => sum + Number(a.current_balance), 0)
 
   let txnQuery = supabase
-  .from('transactions')
-  .select('occurred_at, type, amount, account_id, transfer_account_id')
-  .gte('occurred_at', `${beforeDate}T00:00:00+05:30`)
+    .from('transactions')
+    .select('type, amount, account_id, transfer_account_id')
+    .gt('occurred_at', `${asOfDate}T23:59:59.999`)
 
   if (accountId) {
     txnQuery = txnQuery.or(`account_id.eq.${accountId},transfer_account_id.eq.${accountId}`)
   }
 
-  const { data: laterTxns, error: txnError } = await txnQuery  
+  const { data: laterTxns, error: txnError } = await txnQuery
   if (txnError) throw txnError
 
   let deltaSinceThen = 0
-  
   for (const t of laterTxns ?? []) {
     const amount = Number(t.amount)
-  
     if (t.type === 'income') {
       deltaSinceThen += amount
     } else if (t.type === 'expense') {
       deltaSinceThen -= amount
     } else if (t.type === 'transfer') {
+      // Across the whole portfolio a transfer nets to zero, but for a single
+      // account it's a debit on one side and a credit on the other.
       if (!accountId) continue
-  
-      if (t.account_id === accountId) {
-        deltaSinceThen -= amount
-      }
-  
-      if (t.transfer_account_id === accountId) {
-        deltaSinceThen += amount
-      }
+      if (t.account_id === accountId) deltaSinceThen -= amount
+      if (t.transfer_account_id === accountId) deltaSinceThen += amount
     }
   }
-  
+
   return currentTotal - deltaSinceThen
 }
 

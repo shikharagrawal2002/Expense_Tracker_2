@@ -1,6 +1,7 @@
 import { MonthlyTrendChart } from '@/features/analytics/monthly-trend-chart'
 import { CategoryBreakdownChart } from '@/features/analytics/category-breakdown-chart'
 import { SpendingHeatmap } from '@/features/analytics/spending-heatmap'
+import { BudgetVsActualChart } from '@/features/analytics/budget-vs-actual-chart'
 
 export function AnalyticsPage() {
   return (
@@ -10,6 +11,7 @@ export function AnalyticsPage() {
         <MonthlyTrendChart />
         <CategoryBreakdownChart />
       </div>
+      <BudgetVsActualChart />
       <SpendingHeatmap />
     </div>
   )
