@@ -19,7 +19,7 @@ export function SplitsPage() {
   const setSplitGroupClosed = useSetSplitGroupClosed()
 
   const visibleGroups = splitGroups?.filter((g) => (tab === 'open' ? !g.is_closed : g.is_closed))
-
+  console.log('visibleGroups', visibleGroups, splitGroups, tab)
   return (
     <div className="max-w-[800px] space-y-5">
       <div className="flex items-start justify-between">
