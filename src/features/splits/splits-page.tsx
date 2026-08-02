@@ -19,6 +19,11 @@ export function SplitsPage() {
   const setSplitGroupClosed = useSetSplitGroupClosed()
 
   const visibleGroups = splitGroups?.filter((g) => (tab === 'open' ? !g.is_closed : g.is_closed))
+
+  const sortedGroups = visibleGroups?.sort((a, b) => {
+    return new Date(a.transaction.occurred_at).getTime() - new Date(b.transaction.occurred_at).getTime()
+  })
+
   return (
     <div className="max-w-[800px] space-y-5">
       <div className="flex items-start justify-between">
@@ -61,7 +66,7 @@ export function SplitsPage() {
         </div>
       )}
 
-      {!isLoading && visibleGroups?.length === 0 && (
+      {!isLoading && sortedGroups?.length === 0 && (
         <EmptyState
           icon={Users}
           title={tab === 'open' ? 'No open splits' : 'No closed splits'}
@@ -74,7 +79,7 @@ export function SplitsPage() {
       )}
 
       {!isLoading &&
-        visibleGroups?.map((group) => {
+        sortedGroups?.map((group) => {
           const settledCount = group.participants?.filter((p) => p.is_settled).length ?? 0
           const totalParticipants = group.participants?.length ?? 0
           const owedTotal =
@@ -87,7 +92,6 @@ export function SplitsPage() {
                   <div className="min-w-0">
                     <p className="font-display text-base font-semibold truncate">{group.title}</p>
                     <p className="text-xs text-muted">
-                      {console.log(group.transaction)}
                       {new Date(group.transaction.occurred_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       {group.transaction && (
                         <>
