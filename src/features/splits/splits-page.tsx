@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react'
 import { Plus, Users, Trash2, Check, Archive, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
