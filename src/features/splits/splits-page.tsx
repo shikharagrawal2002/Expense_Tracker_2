@@ -87,7 +87,7 @@ export function SplitsPage() {
                   <div className="min-w-0">
                     <p className="font-display text-base font-semibold truncate">{group.title}</p>
                     <p className="text-xs text-muted">
-                      {new Date(group.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {new Date(group.transaction.occurred_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       {group.transaction && (
                         <>
                           {' '}
