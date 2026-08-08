@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, Menu } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, Wallet, PiggyBank, CreditCard, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const ITEMS = [
   { to: '/dashboard', label: 'Home', icon: LayoutDashboard },
   { to: '/transactions', label: 'Activity', icon: ArrowLeftRight },
   { to: '/accounts', label: 'Accounts', icon: Wallet },
+  { to: '/credit-cards', label: 'Cards', icon: CreditCard },
   { to: '/budgets', label: 'Budgets', icon: PiggyBank },
   { to: '/settings', label: 'More', icon: Menu },
 ]
