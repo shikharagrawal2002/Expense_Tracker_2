@@ -62,7 +62,7 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{txn.category?.name ?? (txn.type === 'transfer' ? 'Transfer' : 'Uncategorized')}</p>
-        <p className="text-xs text-muted truncate flex items-center gap-1">
+        <p className="text-xs text-muted truncate hidden sm:block">
           {txn.type === 'transfer' && isSourceView ? (
             <span className="truncate">To {txn.transfer_account?.name ?? 'Unknown'} · {subtitleDate}</span>
           ) : txn.type === 'transfer' && isDestinationView ? (
@@ -81,18 +81,21 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
             </span>
           )}
         </p>
+        <p className="text-xs text-muted sm:hidden">
+          {subtitleDate}
+        </p>
       </div>
       {txn.split_status && (
-        <Badge variant={txn.split_status === 'open' ? 'default' : 'warning'} className="shrink-0">
+        <Badge variant={txn.split_status === 'open' ? 'default' : 'warning'} className="shrink-0 hidden sm:flex">
           <Users className="h-3 w-3" />
-          Split · {txn.split_status === 'open' ? 'Open' : 'Closed'}
+          {txn.split_status === 'open' ? 'Open' : 'Closed'}
         </Badge>
       )}
       <p className={cn('text-sm font-medium num shrink-0', amountColorClass)}>
         {signedAmount > 0 ? '+' : ''}
         {formatCurrency(signedAmount, txn.currency)}
       </p>
-      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <div className="hidden sm:flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
         {splitButtonTypes.includes(txn.type) && (
           <SplitFormDialog
             presetTransaction={txn}
@@ -124,6 +127,26 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
           aria-label="Delete transaction"
         >
           <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="flex sm:hidden items-center shrink-0">
+        <TransactionFormDialog
+          transaction={txn}
+          trigger={
+            <button
+              className="rounded-lg p-1.5 hover:surface text-muted hover:text-inherit transition-colors"
+              aria-label="Edit transaction"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+          }
+        />
+        <button
+          onClick={() => deleteTransaction.mutate(txn.id)}
+          className="rounded-lg p-1.5 hover:bg-[var(--color-negative-500)]/10 text-muted hover:text-[var(--color-negative-600)] transition-colors"
+          aria-label="Delete transaction"
+        >
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
     </div>

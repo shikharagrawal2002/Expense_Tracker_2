@@ -211,64 +211,119 @@ export function CreditCardsPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-xs text-muted">
-                <tr className="border-b border-hairline">
-                  <th className="text-left font-medium py-2">Statement</th>
-                  <th className="text-left font-medium py-2">Cycle</th>
-                  <th className="text-right font-medium py-2">Amount</th>
-                  <th className="text-right font-medium py-2">Min due</th>
-                  <th className="text-center font-medium py-2">Due date</th>
-                  <th className="text-center font-medium py-2">Status</th>
-                  <th className="text-right font-medium py-2">Points</th>
-                  <th className="text-center font-medium py-2">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((s) => (
-                  <tr key={s.id} className="border-b border-hairline last:border-0">
-                    <td className="py-2 font-medium">
-                      {new Date(s.statement_month).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="py-2 text-left text-muted">{formatCycleRange(s)}</td>
-                    <td className="py-2 text-right num">{formatCurrency(s.statement_amount)}</td>
-                    <td className="py-2 text-right num text-muted">
-                      {s.minimum_due != null ? formatCurrency(s.minimum_due) : '–'}
-                    </td>
-                    <td className="py-2 text-center">
-                      {new Date(s.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                    </td>
-                    <td className="py-2 text-center">
-                      <Badge variant={s.is_paid ? 'positive' : 'warning'}>{s.is_paid ? 'Paid' : 'Unpaid'}</Badge>
-                    </td>
-                    <td className="py-2 text-right num text-[var(--color-warning-500)]">
-                      {s.reward_points_earned ? `+${s.reward_points_earned}` : '–'}
-                    </td>
-                    <td className="py-2 text-center">
-                      <Button
-                        size="sm"
-                        variant={s.is_paid ? 'secondary' : 'default'}
-                        onClick={() => setCardStatementPaid.mutate({ id: s.id, isPaid: !s.is_paid })}
-                        disabled={setCardStatementPaid.isPending}
-                      >
-                        {s.is_paid ? (
-                          <>
-                            <RotateCcw className="h-3 w-3" />
-                            Unpaid
-                          </>
-                        ) : (
-                          <>
-                            <Check className="h-3 w-3" />
-                            Mark paid
-                          </>
-                        )}
-                      </Button>
-                    </td>
+          <CardContent>
+            {/* Mobile card layout */}
+            <div className="space-y-3 sm:hidden">
+              {history.map((s) => (
+                <div key={s.id} className="border border-hairline rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">
+                        {new Date(s.statement_month).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                      </p>
+                      <p className="text-xs text-muted">{formatCycleRange(s)}</p>
+                    </div>
+                    <Badge variant={s.is_paid ? 'positive' : 'warning'}>{s.is_paid ? 'Paid' : 'Unpaid'}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <p className="text-xs text-muted">Amount</p>
+                      <p className="font-medium num">{formatCurrency(s.statement_amount)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted">Due date</p>
+                      <p className="font-medium">
+                        {new Date(s.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-hairline">
+                    <div className="text-xs text-muted">
+                      {s.reward_points_earned ? `+${s.reward_points_earned} pts` : '–'}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={s.is_paid ? 'secondary' : 'default'}
+                      onClick={() => setCardStatementPaid.mutate({ id: s.id, isPaid: !s.is_paid })}
+                      disabled={setCardStatementPaid.isPending}
+                    >
+                      {s.is_paid ? (
+                        <>
+                          <RotateCcw className="h-3 w-3" />
+                          Unpaid
+                        </>
+                      ) : (
+                        <>
+                          <Check className="h-3 w-3" />
+                          Mark paid
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table layout */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs text-muted">
+                  <tr className="border-b border-hairline">
+                    <th className="text-left font-medium py-2">Statement</th>
+                    <th className="text-left font-medium py-2">Cycle</th>
+                    <th className="text-right font-medium py-2">Amount</th>
+                    <th className="text-right font-medium py-2">Min due</th>
+                    <th className="text-center font-medium py-2">Due date</th>
+                    <th className="text-center font-medium py-2">Status</th>
+                    <th className="text-right font-medium py-2">Points</th>
+                    <th className="text-center font-medium py-2">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {history.map((s) => (
+                    <tr key={s.id} className="border-b border-hairline last:border-0">
+                      <td className="py-2 font-medium">
+                        {new Date(s.statement_month).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="py-2 text-left text-muted">{formatCycleRange(s)}</td>
+                      <td className="py-2 text-right num">{formatCurrency(s.statement_amount)}</td>
+                      <td className="py-2 text-right num text-muted">
+                        {s.minimum_due != null ? formatCurrency(s.minimum_due) : '–'}
+                      </td>
+                      <td className="py-2 text-center">
+                        {new Date(s.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </td>
+                      <td className="py-2 text-center">
+                        <Badge variant={s.is_paid ? 'positive' : 'warning'}>{s.is_paid ? 'Paid' : 'Unpaid'}</Badge>
+                      </td>
+                      <td className="py-2 text-right num text-[var(--color-warning-500)]">
+                        {s.reward_points_earned ? `+${s.reward_points_earned}` : '–'}
+                      </td>
+                      <td className="py-2 text-center">
+                        <Button
+                          size="sm"
+                          variant={s.is_paid ? 'secondary' : 'default'}
+                          onClick={() => setCardStatementPaid.mutate({ id: s.id, isPaid: !s.is_paid })}
+                          disabled={setCardStatementPaid.isPending}
+                        >
+                          {s.is_paid ? (
+                            <>
+                              <RotateCcw className="h-3 w-3" />
+                              Unpaid
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-3 w-3" />
+                              Mark paid
+                            </>
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       )}
