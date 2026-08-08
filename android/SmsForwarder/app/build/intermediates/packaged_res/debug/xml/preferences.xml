@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Connection">
+        <EditTextPreference
+            android:key="server_url"
+            android:title="Server URL"
+            android:summary="e.g. https://your-project.supabase.co/functions/v1/ingest-sms"
+            android:inputType="textUri"
+            android:selectAllOnFocus="true"
+            android:persistent="true" />
+
+        <EditTextPreference
+            android:key="api_key"
+            android:title="API Key"
+            android:summary="Paste your API key from the Ledger web app"
+            android:inputType="text"
+            android:selectAllOnFocus="true"
+            android:persistent="true" />
+
+        <SwitchPreferenceCompat
+            android:key="filter_bank_sms"
+            android:title="Only forward bank/UPI SMS"
+            android:summary="Only forward messages containing transaction keywords (debited, credited, UPI, etc.)"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="About">
+        <Preference
+            android:key="about"
+            android:title="Ledger SMS Forwarder"
+            android:summary="Sends your bank/UPI transaction SMS to your Ledger expense tracker. Messages are parsed and stored for review — nothing is saved to your Ledger without your confirmation."
+            android:selectable="false" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

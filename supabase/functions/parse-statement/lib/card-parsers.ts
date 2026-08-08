@@ -24,6 +24,9 @@ interface CardStatementSummary {
   dueDate: string | null
   statementAmount: number | null
   minimumDue: number | null
+  /** Billing cycle covered by this statement (e.g. 15 Jun – 14 Jul). */
+  cycleStartDate: string | null
+  cycleEndDate: string | null
 }
 
 const LABELS = {
@@ -31,6 +34,34 @@ const LABELS = {
   dueDate: [/due\s*by\s*date/i, /payment\s*due\s*date/i, /due\s*date/i],
   statementAmount: [/total\s*(amount\s*)?due/i, /statement\s*amount/i, /amount\s*due/i, /total\s*due/i, /new\s*balance/i],
   minimumDue: [/minimum\s*(amount\s*)?due/i, /min(\.|imum)?\s*due/i],
+  cycleStart: [/statement\s*period/i, /billing\s*period/i, /period\s*from/i, /transaction\s*from/i, /from\s*date/i, /^from/i],
+  cycleEnd: [/period\s*to/i, /transaction\s*to/i, /to\s*date/i, /^to/i],
+}
+
+/** Finds a "from … to …" range in a single token (e.g. "15-Jun-2026 to 14-Jul-2026")
+ *  or across adjacent cells in a row, returning both ends. */
+function scanForCycleRange(tokenRows: string[][]): { start: string | null; end: string | null } {
+  for (const tokens of tokenRows) {
+    // Same-cell range, e.g. "Statement Period: 15-Jun-2026 to 14-Jul-2026"
+    for (const token of tokens) {
+      const rangeMatch = token.match(/(\b\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}\b)\s*(?:to|-|–)\s*(\b\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}\b)/i)
+      if (rangeMatch) {
+        const start = parseStatementDate(rangeMatch[1])
+        const end = parseStatementDate(rangeMatch[2])
+        if (start && end) return { start, end }
+      }
+    }
+
+    // Adjacent cells, e.g. ["From", "15-Jun-2026", "To", "14-Jul-2026"]
+    const startIdx = tokens.findIndex((t) => LABELS.cycleStart.some((p) => p.test(t)))
+    const endIdx = tokens.findIndex((t) => LABELS.cycleEnd.some((p) => p.test(t)))
+    if (startIdx !== -1 && endIdx !== -1) {
+      const startVal = parseStatementDate(tokens[startIdx + 1] ?? '')
+      const endVal = parseStatementDate(tokens[endIdx + 1] ?? '')
+      if (startVal && endVal) return { start: startVal, end: endVal }
+    }
+  }
+  return { start: null, end: null }
 }
 
 /** Splits a free-text line into "cell-like" tokens the same way a spreadsheet
@@ -73,6 +104,7 @@ export function extractCardSummary(content: ExtractedContent, warnings: string[]
   const dueDate = scanForLabeledValue(tokenRows, LABELS.dueDate, parseStatementDate)
   const statementAmount = scanForLabeledValue(tokenRows, LABELS.statementAmount, parseAmount)
   const minimumDue = scanForLabeledValue(tokenRows, LABELS.minimumDue, parseAmount)
+  const { start: cycleStartDate, end: cycleEndDate } = scanForCycleRange(tokenRows)
 
   if (!dueDate || statementAmount === null) {
     warnings.push(
@@ -85,7 +117,7 @@ export function extractCardSummary(content: ExtractedContent, warnings: string[]
     ? `${anchorDate.slice(0, 7)}-01`
     : `${new Date().toISOString().slice(0, 7)}-01`
 
-  return { statementMonth, statementDate, dueDate, statementAmount, minimumDue }
+  return { statementMonth, statementDate, dueDate, statementAmount, minimumDue, cycleStartDate, cycleEndDate }
 }
 
 export function parseCardStatement(

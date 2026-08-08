@@ -138,6 +138,8 @@ export function ImportsPage() {
           statement_amount: cardSummary.statementAmount,
           due_date: cardSummary.dueDate,
           minimum_due: cardSummary.minimumDue ?? undefined,
+          cycle_start_date: cardSummary.cycleStartDate ?? undefined,
+          cycle_end_date: cardSummary.cycleEndDate ?? undefined,
         },
         transactions,
       })

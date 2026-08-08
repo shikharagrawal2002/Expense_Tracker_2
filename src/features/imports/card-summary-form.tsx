@@ -35,6 +35,22 @@ export function CardSummaryForm({ summary, onChange }: CardSummaryFormProps) {
           />
         </div>
         <div>
+          <Label>Cycle start date</Label>
+          <Input
+            type="date"
+            value={summary.cycleStartDate ?? ''}
+            onChange={(e) => onChange({ ...summary, cycleStartDate: e.target.value || null })}
+          />
+        </div>
+        <div>
+          <Label>Cycle end date</Label>
+          <Input
+            type="date"
+            value={summary.cycleEndDate ?? ''}
+            onChange={(e) => onChange({ ...summary, cycleEndDate: e.target.value || null })}
+          />
+        </div>
+        <div>
           <Label>Due date {missingDueDate && <span className="text-[var(--color-negative-600)]">*</span>}</Label>
           <Input
             type="date"

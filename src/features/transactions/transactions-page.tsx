@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Plus, ArrowLeftRight, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -16,7 +17,7 @@ import type { Transaction } from '@/lib/supabase/types'
 
 export function TransactionsPage() {
   const [search, setSearch] = useState('')
-  const [accountId, setAccountId] = useState('')
+  const [accountIds, setAccountIds] = useState<string[]>([])
   const [type, setType] = useState<Transaction['type'] | ''>('')
   const [datePreset, setDatePreset] = useState<DateRangePreset>('all')
   const [cycleReference, setCycleReference] = useState(() => new Date())
@@ -41,7 +42,7 @@ export function TransactionsPage() {
     isError,
   } = useTransactions({
     search: search || undefined,
-    accountId: accountId || undefined,
+    accountIds: accountIds.length > 0 ? accountIds : undefined,
     type: type || undefined,
     dateFrom,
     dateTo,
@@ -50,7 +51,7 @@ export function TransactionsPage() {
   // "Previous month final balance": the closing balance as of the start of the
   // statement cycle (which is, by definition, the last day of the previous month).
   const { data: previousMonthBalance } = useBalanceAsOf(
-    accountId || undefined,
+    accountIds,
     datePreset === 'cycle' ? statementCycle.start : undefined,
   )
 
@@ -84,14 +85,13 @@ export function TransactionsPage() {
           <option value="expense">Expense</option>
           <option value="transfer">Transfer</option>
         </Select>
-        <Select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="sm:w-48">
-          <option value="">All accounts</option>
-          {accounts?.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </Select>
+        <MultiSelect
+          options={accounts?.map((a) => ({ value: a.id, label: a.name })) ?? []}
+          selected={accountIds}
+          onChange={setAccountIds}
+          placeholder="All accounts"
+          className="sm:w-56"
+        />
         <Select
           value={datePreset}
           onChange={(e) => setDatePreset(e.target.value as DateRangePreset)}
@@ -163,7 +163,7 @@ export function TransactionsPage() {
               icon={ArrowLeftRight}
               title="No transactions found"
               description={
-                search || accountId || type || datePreset !== 'all'
+                search || accountIds.length > 0 || type || datePreset !== 'all'
                   ? 'Try adjusting your filters.'
                   : 'Add your first transaction to start building your history.'
               }
@@ -173,22 +173,28 @@ export function TransactionsPage() {
           {!isLoading && transactions && transactions.length > 0 && (
             <div className="divide-y divide-[var(--color-border-light)] dark:divide-[var(--color-border-dark)]">
               {transactions.flatMap((txn) => {
-                // Viewing a specific account: show the one row, correctly
-                // signed for that account's side of the transfer (or as-is for
-                // income/expense).
-                if (accountId) {
-                  return [<TransactionRow key={txn.id} txn={txn} viewAccountId={accountId} />]
-                }
-                // Viewing "All accounts": a transfer has no single sign that's
-                // correct for both sides at once, so show it as two entries —
-                // one leaving the source account (negative), one arriving at
-                // the destination (positive) — same underlying transaction,
-                // editing/deleting either one acts on it as a whole.
+                // A transfer has no single sign that's correct for both sides
+                // at once. When viewing "All accounts" (no filter) or when both
+                // sides of the transfer are among the selected accounts, show
+                // it as two entries — one leaving the source account
+                // (negative), one arriving at the destination (positive) —
+                // same underlying transaction, editing/deleting either one
+                // acts on it as a whole.
                 if (txn.type === 'transfer' && txn.transfer_account_id) {
-                  return [
-                    <TransactionRow key={`${txn.id}-out`} txn={txn} viewAccountId={txn.account_id} />,
-                    <TransactionRow key={`${txn.id}-in`} txn={txn} viewAccountId={txn.transfer_account_id} />,
-                  ]
+                  const sourceSelected = accountIds.length === 0 || accountIds.includes(txn.account_id)
+                  const destSelected = accountIds.length === 0 || accountIds.includes(txn.transfer_account_id)
+                  if (sourceSelected && destSelected) {
+                    return [
+                      <TransactionRow key={`${txn.id}-out`} txn={txn} viewAccountId={txn.account_id} />,
+                      <TransactionRow key={`${txn.id}-in`} txn={txn} viewAccountId={txn.transfer_account_id} />,
+                    ]
+                  }
+                  if (sourceSelected) {
+                    return [<TransactionRow key={txn.id} txn={txn} viewAccountId={txn.account_id} />]
+                  }
+                  if (destSelected) {
+                    return [<TransactionRow key={txn.id} txn={txn} viewAccountId={txn.transfer_account_id} />]
+                  }
                 }
                 return [<TransactionRow key={txn.id} txn={txn} />]
               })}

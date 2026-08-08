@@ -1,0 +1,4 @@
+com.ledger.smsforwarder.test.app-androidTest-0 C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\build\generated\res\resValues\androidTest\debug
+com.ledger.smsforwarder.test.app-mergeDebugAndroidTestResources-1 C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.ledger.smsforwarder.test.app-mergeDebugAndroidTestResources-2 C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.ledger.smsforwarder.test.app-merged_res-3 C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\build\intermediates\merged_res\debugAndroidTest

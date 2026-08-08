@@ -56,6 +56,9 @@ interface CardStatementSummary {
   dueDate: string | null
   statementAmount: number | null
   minimumDue: number | null
+  /** Billing cycle covered by this statement (e.g. 15 Jun – 14 Jul). */
+  cycleStartDate: string | null
+  cycleEndDate: string | null
 }
 
 interface ParseResult {

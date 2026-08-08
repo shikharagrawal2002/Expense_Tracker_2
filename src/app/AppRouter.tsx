@@ -19,6 +19,8 @@ import { DebtsPage } from '@/features/debts/debts-page'
 import { AnalyticsPage } from '@/features/analytics/analytics-page'
 import { ReportsPage } from '@/features/reports/reports-page'
 import { SettingsPage } from '@/features/settings/settings-page'
+import { SmsPage } from '@/features/sms/sms-page'
+import { SmsSettingsPage } from '@/features/sms/sms-settings-page'
 
 const router = createBrowserRouter(
   [
@@ -48,6 +50,8 @@ const router = createBrowserRouter(
             { path: 'analytics', element: <AnalyticsPage /> },
             { path: 'reports', element: <ReportsPage /> },
             { path: 'settings', element: <SettingsPage /> },
+            { path: 'sms', element: <SmsPage /> },
+            { path: 'sms/settings', element: <SmsSettingsPage /> },
           ],
         },
       ],

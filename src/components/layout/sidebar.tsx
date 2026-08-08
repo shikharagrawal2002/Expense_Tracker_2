@@ -17,6 +17,7 @@ import {
   UploadCloud,
   Users,
   CreditCard,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -37,6 +38,7 @@ const NAV_SECTIONS = [
       { to: '/categories', label: 'Categories', icon: Tags },
       { to: '/imports', label: 'Import statements', icon: UploadCloud },
       { to: '/splits', label: 'Splits', icon: Users },
+      { to: '/sms', label: 'SMS tracking', icon: MessageSquare },
     ],
   },
   {

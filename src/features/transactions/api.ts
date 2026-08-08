@@ -3,7 +3,8 @@ import type { Transaction, NewTransaction } from '@/lib/supabase/types'
 
 export interface TransactionFilters {
   search?: string
-  accountId?: string
+  /** One or more account IDs to filter by. When empty, all accounts are shown. */
+  accountIds?: string[]
   categoryId?: string
   type?: Transaction['type']
   /** inclusive, ISO date (yyyy-mm-dd) or full timestamp */
@@ -26,9 +27,11 @@ export async function fetchTransactions(filters: TransactionFilters = {}): Promi
   // destination for non-transfers where transfer_account_id is null) OR
   // transfer_account_id (the destination side of a transfer) — so filtering by
   // an account shows transfers where that account was either side, not just
-  // the source.
-  if (filters.accountId) {
-    query = query.or(`account_id.eq.${filters.accountId},transfer_account_id.eq.${filters.accountId}`)
+  // the source. With multiple accounts selected, a transaction matches if
+  // either side is one of the selected accounts.
+  if (filters.accountIds && filters.accountIds.length > 0) {
+    const ids = filters.accountIds.join(',')
+    query = query.or(`account_id.in.(${ids}),transfer_account_id.in.(${ids})`)
   }
   if (filters.categoryId) query = query.eq('category_id', filters.categoryId)
   if (filters.type) query = query.eq('type', filters.type)
@@ -84,14 +87,14 @@ export async function editTransaction(input: EditTransactionInput): Promise<Tran
   return data as Transaction
 }
 
-/** Reconstructs what an account's (or, if accountId is omitted, every
+/** Reconstructs what the selected accounts' (or, if accountIds is empty, every
  *  account's combined) balance was at the end of a given date, by taking the
  *  current authoritative balance and undoing every transaction that happened
  *  strictly after that date. This avoids assuming a zero starting balance or
  *  needing a separate balance-history table. */
-export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: string): Promise<number> {
+export async function fetchBalanceAsOf(accountIds: string[], asOfDate: string): Promise<number> {
   let accountsQuery = supabase.from('accounts').select('id, current_balance')
-  if (accountId) accountsQuery = accountsQuery.eq('id', accountId)
+  if (accountIds.length > 0) accountsQuery = accountsQuery.in('id', accountIds)
   const { data: accounts, error: accountsError } = await accountsQuery
   if (accountsError) throw accountsError
   if (!accounts || accounts.length === 0) return 0
@@ -103,12 +106,15 @@ export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: 
     .select('type, amount, account_id, transfer_account_id')
     .gt('occurred_at', `${asOfDate}T23:59:59.999`)
 
-  if (accountId) {
-    txnQuery = txnQuery.or(`account_id.eq.${accountId},transfer_account_id.eq.${accountId}`)
+  if (accountIds.length > 0) {
+    const ids = accountIds.join(',')
+    txnQuery = txnQuery.or(`account_id.in.(${ids}),transfer_account_id.in.(${ids})`)
   }
 
   const { data: laterTxns, error: txnError } = await txnQuery
   if (txnError) throw txnError
+
+  const selectedSet = new Set(accountIds)
 
   let deltaSinceThen = 0
   for (const t of laterTxns ?? []) {
@@ -120,9 +126,9 @@ export async function fetchBalanceAsOf(accountId: string | undefined, asOfDate: 
     } else if (t.type === 'transfer') {
       // Across the whole portfolio a transfer nets to zero, but for a single
       // account it's a debit on one side and a credit on the other.
-      if (!accountId) continue
-      if (t.account_id === accountId) deltaSinceThen -= amount
-      if (t.transfer_account_id === accountId) deltaSinceThen += amount
+      if (accountIds.length === 0) continue
+      if (selectedSet.has(t.account_id)) deltaSinceThen -= amount
+      if (selectedSet.has(t.transfer_account_id)) deltaSinceThen += amount
     }
   }
 

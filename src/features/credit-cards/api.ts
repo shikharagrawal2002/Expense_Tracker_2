@@ -5,6 +5,8 @@ export interface CreditCardSummary {
   account: Account
   latestStatement: CardStatement | null
   utilizationPct: number | null
+  pendingBalance: number // Total outstanding across all unpaid statements
+  effectiveUtilizationPct: number | null // Utilization based on pending balance
 }
 
 export async function fetchCreditCardSummaries(): Promise<CreditCardSummary[]> {
@@ -26,11 +28,31 @@ export async function fetchCreditCardSummaries(): Promise<CreditCardSummary[]> {
   if (statementsError) throw statementsError
 
   return (accounts as Account[]).map((account) => {
-    const latestStatement = (statements as CardStatement[] | null)?.find((s) => s.account_id === account.id) ?? null
+    const accountStatements = (statements as CardStatement[] | null)?.filter((s) => s.account_id === account.id) ?? []
+    const latestStatement = accountStatements[0] ?? null
+
+    // Calculate pending balance: sum of all unpaid statement amounts
+    const pendingBalance = accountStatements
+      .filter((s) => !s.is_paid)
+      .reduce((sum, s) => sum + s.statement_amount, 0)
+
+    // Original utilization based on current_balance (may be 0 if statements are marked paid)
     const utilizationPct = account.credit_limit
       ? Math.round((Math.abs(account.current_balance) / account.credit_limit) * 100)
       : null
-    return { account, latestStatement, utilizationPct }
+
+    // Effective utilization based on pending balance (all unpaid statements)
+    const effectiveUtilizationPct = account.credit_limit
+      ? Math.round((pendingBalance / account.credit_limit) * 100)
+      : null
+
+    return {
+      account,
+      latestStatement,
+      utilizationPct,
+      pendingBalance,
+      effectiveUtilizationPct,
+    }
   })
 }
 
@@ -43,4 +65,14 @@ export async function fetchCardStatementHistory(accountId: string): Promise<Card
     .order('statement_month', { ascending: false })
   if (error) throw error
   return data as CardStatement[]
+}
+
+/** Marks a card statement as paid (or unpaid), resets the card's credit limit balance, and stamps paid_at accordingly. */
+export async function setCardStatementPaid(id: string, isPaid: boolean): Promise<CardStatement> {
+  const { data, error } = await supabase.rpc('set_card_statement_paid', {
+    p_id: id,
+    p_is_paid: isPaid,
+  })
+  if (error) throw error
+  return data as CardStatement
 }

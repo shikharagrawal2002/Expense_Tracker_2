@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SmsForwarder" parent="Theme.Material3.Light">
+        <item name="colorPrimary">#5B6EF5</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#5B6EF5</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="android:statusBarColor">#5B6EF5</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+    </style>
+</resources>

@@ -105,10 +105,16 @@ export interface CardStatement {
   paid_at: string | null
   reward_points_earned: number
   import_batch_id: string | null
+  /** Start of the billing cycle covered by this statement, e.g. "2026-06-15" */
+  cycle_start_date: string | null
+  /** End of the billing cycle covered by this statement, e.g. "2026-07-14" */
+  cycle_end_date: string | null
+  /** Snapshot of the account's current_balance before this statement was marked paid; null if unpaid. */
+  balance_before_payment: number | null
 }
 
 export type NewCardStatement = Pick<CardStatement, 'account_id' | 'statement_month' | 'statement_amount' | 'due_date'> &
-  Partial<Pick<CardStatement, 'minimum_due' | 'import_batch_id'>>
+  Partial<Pick<CardStatement, 'minimum_due' | 'import_batch_id' | 'cycle_start_date' | 'cycle_end_date'>>
 
 // ----------------------------------------------------------------------------
 // Shapes returned by the `parse-statement` edge function (kept in sync with
@@ -162,12 +168,48 @@ export interface ParsedTransaction {
   sourceLine: string
 }
 
+export interface SmsSource {
+  id: string
+  user_id: string
+  sender_phone: string
+  bank_name: string
+  upi_vpa: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export type SmsStatus = 'pending' | 'confirmed' | 'skipped' | 'duplicate'
+
+export interface SmsTransaction {
+  id: string
+  user_id: string
+  sender_phone: string
+  raw_text: string
+  received_at: string
+  parsed_at: string | null
+  account_id: string | null
+  amount: number | null
+  type: 'debit' | 'credit' | null
+  description: string | null
+  merchant: string | null
+  upi_ref: string | null
+  status: SmsStatus
+  confirmed_at: string | null
+  transaction_id: string | null
+  created_at: string
+  // convenience joins
+  account?: Pick<Account, 'id' | 'name' | 'color' | 'icon'>
+}
+
 export interface CardStatementSummary {
   statementMonth: string
   statementDate: string | null
   dueDate: string | null
   statementAmount: number | null
   minimumDue: number | null
+  /** Billing cycle covered by this statement (e.g. 15 Jun – 14 Jul). */
+  cycleStartDate: string | null
+  cycleEndDate: string | null
 }
 
 export interface ParseStatementResult {

@@ -1,14 +1,45 @@
 import { useEffect, useState } from 'react'
-import { CreditCard, AlertTriangle } from 'lucide-react'
+import { CreditCard, AlertTriangle, Check, RotateCcw } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/skeleton'
 import { ProgressRing } from '@/components/ui/progress-ring'
 import { EmptyState } from '@/components/shared/empty-state'
 import { formatCurrency, cn } from '@/lib/utils'
-import { useCreditCardSummaries, useCardStatementHistory } from '@/features/credit-cards/hooks'
+import { useCreditCardSummaries, useCardStatementHistory, useSetCardStatementPaid } from '@/features/credit-cards/hooks'
 import { useTransactions } from '@/features/transactions/hooks'
 import { TransactionRow } from '@/features/transactions/transaction-row'
+import type { CardStatement } from '@/lib/supabase/types'
+
+/** Formats a "yyyy-mm-dd" date for dropdown labels (e.g. "Jun 15 – Jul 14"). */
+function formatCycleRange(statement: CardStatement): string {
+  const start = statement.cycle_start_date ?? statement.statement_month
+  const end = statement.cycle_end_date ?? statement.statement_month
+  const startLabel = new Date(`${start}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  const endLabel = new Date(`${end}T00:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  return `${startLabel} – ${endLabel}`
+}
+
+/** Inclusive ISO date range for a statement, or null if no dates are available.
+ *  When cycle dates are missing (older imports), falls back to the calendar
+ *  month of the statement (1st through last day). */
+function statementDateRange(statement: CardStatement): { start: string; end: string } | null {
+  const start = statement.cycle_start_date ?? statement.statement_month
+  if (!start) return null
+
+  if (statement.cycle_end_date) {
+    return { start, end: statement.cycle_end_date }
+  }
+
+  // Last day of the statement month — read from local calendar fields, NOT
+  // toISOString(), which would shift the date back a day for any timezone
+  // ahead of UTC (IST is UTC+5:30).
+  const [year, month] = statement.statement_month.split('-').map(Number)
+  const lastDay = new Date(year, month, 0).getDate()
+  return { start, end: `${statement.statement_month.slice(0, 7)}-${String(lastDay).padStart(2, '0')}` }
+}
 
 function daysUntil(dateStr: string): number {
   const due = new Date(dateStr)
@@ -20,7 +51,9 @@ function daysUntil(dateStr: string): number {
 
 export function CreditCardsPage() {
   const { data: summaries, isLoading } = useCreditCardSummaries()
+  const setCardStatementPaid = useSetCardStatementPaid()
   const [selectedCardId, setSelectedCardId] = useState<string>('')
+  const [selectedStatementId, setSelectedStatementId] = useState<string>('')
 
   useEffect(() => {
     if (!selectedCardId && summaries && summaries.length > 0) {
@@ -28,10 +61,25 @@ export function CreditCardsPage() {
     }
   }, [summaries, selectedCardId])
 
-  const selected = summaries?.find((s) => s.account.id === selectedCardId)
+  const selected = summaries?.find((s) => s.account.id === selectedCardId) ?? null
   const { data: history } = useCardStatementHistory(selectedCardId)
+
+  // Default to the newest statement for the selected card.
+  useEffect(() => {
+    if (history && history.length > 0) {
+      setSelectedStatementId((prev) => (prev && history.some((s) => s.id === prev) ? prev : history[0].id))
+    } else {
+      setSelectedStatementId('')
+    }
+  }, [history])
+
+  const selectedStatement = history?.find((s) => s.id === selectedStatementId) ?? null
+  const cycleRange = selectedStatement ? statementDateRange(selectedStatement) : null
+
   const { data: transactions, isLoading: transactionsLoading } = useTransactions({
-    accountId: selectedCardId || undefined,
+    accountIds: selectedCardId ? [selectedCardId] : undefined,
+    dateFrom: cycleRange?.start,
+    dateTo: cycleRange?.end,
   })
 
   return (
@@ -59,36 +107,51 @@ export function CreditCardsPage() {
 
       {!isLoading && summaries && summaries.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {summaries.map(({ account, latestStatement, utilizationPct }) => {
+          {summaries.map(({ account, latestStatement, pendingBalance, effectiveUtilizationPct }) => {
             const isSelected = account.id === selectedCardId
-            const isHighUtilization = (utilizationPct ?? 0) > 30
+            const isHighUtilization = (effectiveUtilizationPct ?? 0) > 30
             const dueSoon = latestStatement && !latestStatement.is_paid ? daysUntil(latestStatement.due_date) : null
 
             return (
-              <button key={account.id} onClick={() => setSelectedCardId(account.id)} className="text-left">
-                <Card className={cn('transition-colors cursor-pointer', isSelected && 'ring-2 ring-[var(--color-brand-500)]')}>
+              <div
+                key={account.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedCardId(account.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setSelectedCardId(account.id)
+                  }
+                }}
+                className="text-left cursor-pointer"
+              >
+                <Card className={cn('transition-colors', isSelected && 'ring-2 ring-[var(--color-brand-500)]')}>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-4">
                       <ProgressRing
-                        value={utilizationPct ?? 0}
+                        value={effectiveUtilizationPct ?? 0}
                         size={64}
                         strokeWidth={6}
                         color={
                           isHighUtilization ? 'var(--color-negative-500)' : 'var(--color-brand-500)'
                         }
                       >
-                        <span className="text-xs font-semibold num">{utilizationPct ?? '–'}%</span>
+                        <span className="text-xs font-semibold num">{effectiveUtilizationPct ?? '–'}%</span>
                       </ProgressRing>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{account.name}</p>
                         <p className="font-display text-lg font-semibold num">
-                          {formatCurrency(Math.abs(account.current_balance), account.currency)}
+                          {formatCurrency(pendingBalance, account.currency)}
                         </p>
-                        <p className="text-xs text-muted">owed{account.credit_limit ? ` of ${formatCurrency(account.credit_limit)} limit` : ''}</p>
+                        <p className="text-xs text-muted">
+                          pending across unpaid statements
+                          {account.credit_limit ? ` of ${formatCurrency(account.credit_limit)} limit` : ''}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="mt-3 pt-3 border-t border-hairline flex items-center justify-between">
+                    <div className="mt-3 pt-3 border-t border-hairline flex items-center justify-between gap-2">
                       {latestStatement ? (
                         <p className="text-xs text-muted">
                           {formatCurrency(latestStatement.statement_amount)} due{' '}
@@ -97,17 +160,42 @@ export function CreditCardsPage() {
                       ) : (
                         <p className="text-xs text-muted">No statement imported yet</p>
                       )}
-                      {latestStatement?.is_paid && <Badge variant="positive">Paid</Badge>}
-                      {dueSoon !== null && dueSoon <= 7 && (
-                        <Badge variant={dueSoon < 0 ? 'negative' : 'warning'}>
-                          <AlertTriangle className="h-3 w-3" />
-                          {dueSoon < 0 ? 'Overdue' : `Due in ${dueSoon}d`}
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {latestStatement?.is_paid && <Badge variant="positive">Paid</Badge>}
+                        {dueSoon !== null && dueSoon <= 7 && (
+                          <Badge variant={dueSoon < 0 ? 'negative' : 'warning'}>
+                            <AlertTriangle className="h-3 w-3" />
+                            {dueSoon < 0 ? 'Overdue' : `Due in ${dueSoon}d`}
+                          </Badge>
+                        )}
+                        {latestStatement && (
+                          <Button
+                            size="sm"
+                            variant={latestStatement.is_paid ? 'secondary' : 'default'}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setCardStatementPaid.mutate({ id: latestStatement.id, isPaid: !latestStatement.is_paid })
+                            }}
+                            disabled={setCardStatementPaid.isPending}
+                          >
+                            {latestStatement.is_paid ? (
+                              <>
+                                <RotateCcw className="h-3 w-3" />
+                                Mark unpaid
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3 w-3" />
+                                Mark paid
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              </button>
+              </div>
             )
           })}
         </div>
@@ -116,18 +204,25 @@ export function CreditCardsPage() {
       {selected && history && history.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>{selected.account.name} — statement history</CardTitle>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle>{selected.account.name} — statement history</CardTitle>
+              <div className="text-sm text-muted">
+                Total pending: <span className="font-medium">{formatCurrency(selected.pendingBalance, selected.account.currency)}</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-xs text-muted">
                 <tr className="border-b border-hairline">
                   <th className="text-left font-medium py-2">Statement</th>
+                  <th className="text-left font-medium py-2">Cycle</th>
                   <th className="text-right font-medium py-2">Amount</th>
                   <th className="text-right font-medium py-2">Min due</th>
                   <th className="text-center font-medium py-2">Due date</th>
                   <th className="text-center font-medium py-2">Status</th>
                   <th className="text-right font-medium py-2">Points</th>
+                  <th className="text-center font-medium py-2">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,6 +231,7 @@ export function CreditCardsPage() {
                     <td className="py-2 font-medium">
                       {new Date(s.statement_month).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
                     </td>
+                    <td className="py-2 text-left text-muted">{formatCycleRange(s)}</td>
                     <td className="py-2 text-right num">{formatCurrency(s.statement_amount)}</td>
                     <td className="py-2 text-right num text-muted">
                       {s.minimum_due != null ? formatCurrency(s.minimum_due) : '–'}
@@ -149,6 +245,26 @@ export function CreditCardsPage() {
                     <td className="py-2 text-right num text-[var(--color-warning-500)]">
                       {s.reward_points_earned ? `+${s.reward_points_earned}` : '–'}
                     </td>
+                    <td className="py-2 text-center">
+                      <Button
+                        size="sm"
+                        variant={s.is_paid ? 'secondary' : 'default'}
+                        onClick={() => setCardStatementPaid.mutate({ id: s.id, isPaid: !s.is_paid })}
+                        disabled={setCardStatementPaid.isPending}
+                      >
+                        {s.is_paid ? (
+                          <>
+                            <RotateCcw className="h-3 w-3" />
+                            Unpaid
+                          </>
+                        ) : (
+                          <>
+                            <Check className="h-3 w-3" />
+                            Mark paid
+                          </>
+                        )}
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -160,7 +276,52 @@ export function CreditCardsPage() {
       {selectedCardId && (
         <Card>
           <CardHeader>
-            <CardTitle>Transactions</CardTitle>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <CardTitle>Transactions</CardTitle>
+              {history && history.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted">Statement cycle</span>
+                  <Select
+                    value={selectedStatementId}
+                    onChange={(e) => setSelectedStatementId(e.target.value)}
+                    className="sm:w-56"
+                  >
+                    {history.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {formatCycleRange(s)}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              )}
+            </div>
+            {selectedStatement && (
+              <div className="flex items-center gap-3 flex-wrap mt-1 text-sm">
+                <span className="text-muted">
+                  Cycle:{' '}
+                  <span className="font-medium text-inherit">
+                    {formatCycleRange(selectedStatement)}
+                  </span>
+                </span>
+                <span className="text-muted">
+                  Amount due:{' '}
+                  <span className="font-medium text-inherit">
+                    {formatCurrency(selectedStatement.statement_amount)}
+                  </span>
+                </span>
+                <span className="text-muted">
+                  Due date:{' '}
+                  <span className="font-medium text-inherit">
+                    {new Date(`${selectedStatement.due_date}T00:00:00`).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </span>
+                {selectedStatement.is_paid && <Badge variant="positive">Paid</Badge>}
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             {transactionsLoading && (

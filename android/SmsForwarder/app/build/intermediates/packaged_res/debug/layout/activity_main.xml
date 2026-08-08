@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal">
+
+    <ImageView
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginTop="48dp"
+        android:contentDescription="Ledger logo"
+        android:src="@drawable/ic_launcher_foreground"
+        android:background="@drawable/ic_launcher_background"
+        android:padding="16dp"
+        android:layout_gravity="center_horizontal" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Ledger SMS Forwarder"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:fontFamily="sans-serif-medium" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Automatically track expenses from your bank/UPI SMS"
+        android:textSize="14sp"
+        android:textColor="#6B7280"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/textStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:padding="16dp"
+        android:background="@drawable/bg_status_card"
+        android:text="Checking status..."
+        android:textSize="14sp"
+        android:fontFamily="monospace" />
+
+    <Button
+        android:id="@+id/buttonRequestPermissions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Grant SMS Permission"
+        android:padding="12dp" />
+
+    <Button
+        android:id="@+id/buttonOpenSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Open Settings"
+        android:backgroundTint="#6B7280"
+        android:padding="12dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="How it works:\nThis app listens for incoming SMS messages and forwards bank/UPI transaction alerts to your Ledger app. Parsed transactions appear in the web app for quick review and confirmation."
+        android:textSize="13sp"
+        android:textColor="#9CA3AF"
+        android:lineSpacingExtra="4dp" />
+
+</LinearLayout>
