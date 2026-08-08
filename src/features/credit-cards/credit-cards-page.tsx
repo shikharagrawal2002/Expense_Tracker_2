@@ -331,15 +331,15 @@ export function CreditCardsPage() {
       {selectedCardId && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <CardTitle>Transactions</CardTitle>
               {history && history.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted">Statement cycle</span>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-xs text-muted shrink-0">Statement cycle</span>
                   <Select
                     value={selectedStatementId}
                     onChange={(e) => setSelectedStatementId(e.target.value)}
-                    className="sm:w-56"
+                    className="flex-1 sm:w-56"
                   >
                     {history.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -351,31 +351,46 @@ export function CreditCardsPage() {
               )}
             </div>
             {selectedStatement && (
-              <div className="flex items-center gap-3 flex-wrap mt-1 text-sm">
-                <span className="text-muted">
-                  Cycle:{' '}
-                  <span className="font-medium text-inherit">
-                    {formatCycleRange(selectedStatement)}
+              <>
+                <div className="flex items-center gap-3 flex-wrap mt-1 text-sm hidden sm:flex">
+                  <span className="text-muted">
+                    Cycle:{' '}
+                    <span className="font-medium text-inherit">
+                      {formatCycleRange(selectedStatement)}
+                    </span>
                   </span>
-                </span>
-                <span className="text-muted">
-                  Amount due:{' '}
-                  <span className="font-medium text-inherit">
+                  <span className="text-muted">
+                    Amount due:{' '}
+                    <span className="font-medium text-inherit">
+                      {formatCurrency(selectedStatement.statement_amount)}
+                    </span>
+                  </span>
+                  <span className="text-muted">
+                    Due date:{' '}
+                    <span className="font-medium text-inherit">
+                      {new Date(`${selectedStatement.due_date}T00:00:00`).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </span>
+                  {selectedStatement.is_paid && <Badge variant="positive">Paid</Badge>}
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-sm sm:hidden">
+                  <span className="text-muted">
                     {formatCurrency(selectedStatement.statement_amount)}
                   </span>
-                </span>
-                <span className="text-muted">
-                  Due date:{' '}
-                  <span className="font-medium text-inherit">
+                  <span className="text-muted">•</span>
+                  <span className="text-muted">
                     {new Date(`${selectedStatement.due_date}T00:00:00`).toLocaleDateString('en-IN', {
                       day: 'numeric',
                       month: 'short',
-                      year: 'numeric',
                     })}
                   </span>
-                </span>
-                {selectedStatement.is_paid && <Badge variant="positive">Paid</Badge>}
-              </div>
+                  {selectedStatement.is_paid && <Badge variant="positive" className="ml-auto">Paid</Badge>}
+                </div>
+              </>
             )}
           </CardHeader>
           <CardContent>
