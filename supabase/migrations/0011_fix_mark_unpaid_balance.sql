@@ -1,17 +1,25 @@
 -- ============================================================================
--- Migration 0011: Fix mark unpaid functionality
+-- Migration 0011: reset credit card balance when statement is marked paid
 --
--- This fixes the issue where marking a statement as unpaid would fail or
--- set the balance to NULL if balance_before_payment was not properly set.
--- It adds fallback logic to use the statement amount when balance_before_payment
--- is NULL, and adds better error handling.
+-- When a card statement is marked as paid, the outstanding balance on the
+-- card account is set to 0 (the card is fully paid off). When marked unpaid
+-- again, the balance is restored to what it was before payment.
 -- ============================================================================
 
-create or replace function public.set_card_statement_paid(
+-- Track the account balance before the statement was paid so we can
+-- restore it if the user marks the statement unpaid again.
+alter table public.card_statements
+  add column if not exists balance_before_payment numeric(14,2);
+
+-- Drop existing function first to allow return type change
+drop function if exists public.set_card_statement_paid(uuid,boolean);
+
+-- Create function with JSON return type for anon key compatibility
+create function public.set_card_statement_paid(
   p_id uuid,
   p_is_paid boolean
 )
-returns public.card_statements
+returns json
 language plpgsql
 security definer
 set search_path = public
@@ -76,6 +84,6 @@ begin
     returning * into stmt;
   end if;
 
-  return stmt;
+  return json_build_object('statement_id', stmt.id, 'is_paid', stmt.is_paid);
 end;
 $$;

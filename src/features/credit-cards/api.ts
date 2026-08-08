@@ -68,11 +68,11 @@ export async function fetchCardStatementHistory(accountId: string): Promise<Card
 }
 
 /** Marks a card statement as paid (or unpaid), resets the card's credit limit balance, and stamps paid_at accordingly. */
-export async function setCardStatementPaid(id: string, isPaid: boolean): Promise<CardStatement> {
-  const { data, error } = await supabase.rpc('set_card_statement_paid', {
+export async function setCardStatementPaid(id: string, isPaid: boolean): Promise<void> {
+  const { error } = await supabase.rpc('set_card_statement_paid', {
     p_id: id,
     p_is_paid: isPaid,
   })
   if (error) throw error
-  return data as CardStatement
+  // No return value needed, the mutation handles cache invalidation
 }

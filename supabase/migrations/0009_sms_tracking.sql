@@ -77,7 +77,7 @@ create or replace function public.confirm_sms_transaction(
   p_sms_id uuid,
   p_account_id uuid,
   p_category_id uuid default null
-) returns uuid language plpgsql security definer as $$
+) returns json language plpgsql security definer as $$
 declare
   v_sms record;
   v_txn_id uuid;
@@ -120,7 +120,7 @@ begin
   set status = 'confirmed', transaction_id = v_txn_id, confirmed_at = now()
   where id = p_sms_id;
 
-  return v_txn_id;
+  return json_build_object('transaction_id', v_txn_id);
 end;
 $$;
 
@@ -128,10 +128,11 @@ $$;
 -- Helper: skip/ignore an SMS
 -- ============================================================================
 create or replace function public.skip_sms_transaction(p_sms_id uuid)
-returns void language plpgsql security definer as $$
+returns json language plpgsql security definer as $$
 begin
   update public.sms_transactions
   set status = 'skipped'
   where id = p_sms_id and user_id = auth.uid();
+  return json_build_object('success', true);
 end;
 $$;

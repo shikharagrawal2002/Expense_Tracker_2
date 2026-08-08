@@ -26,7 +26,7 @@ alter table public.import_batches
 -- rows it created (but never touches anything the user has since edited by hand
 -- outside of the batch, since we only ever touch rows tagged with this batch id).
 create or replace function public.undo_import_batch(p_batch_id uuid)
-returns void
+returns json
 language plpgsql
 security definer
 set search_path = public
@@ -40,5 +40,6 @@ begin
   update public.import_batches
     set status = 'failed'
     where id = p_batch_id and user_id = auth.uid();
+  return json_build_object('success', true);
 end;
 $$;

@@ -33,13 +33,19 @@ export async function confirmSmsTransaction(
     p_account_id: accountId,
     p_category_id: categoryId ?? null,
   })
+  console.log('confirmSmsTransaction response:', { data, error })
   if (error) throw error
-  return data as string
+  // Extract transaction_id from the JSON response
+  const result = data as { transaction_id: string }
+  console.log('Parsed result:', result)
+  return result.transaction_id
 }
 
 export async function skipSmsTransaction(smsId: string): Promise<void> {
-  const { error } = await supabase.rpc('skip_sms_transaction', { p_sms_id: smsId })
+  const { data, error } = await supabase.rpc('skip_sms_transaction', { p_sms_id: smsId })
+  console.log('skipSmsTransaction response:', { data, error })
   if (error) throw error
+  // No return value needed, just check for errors
 }
 
 export async function fetchSmsSources(): Promise<SmsSource[]> {
@@ -83,6 +89,7 @@ export async function generateSmsApiKey(): Promise<string> {
   const array = new Uint8Array(32)
   crypto.getRandomValues(array)
   const apiKey = Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('')
+  console.log('Generated API key:', apiKey)
 
   // Try to update the profile. If the profile row doesn't exist yet, upsert it.
   const { data: existingProfile, error: fetchError } = await supabase
@@ -91,9 +98,14 @@ export async function generateSmsApiKey(): Promise<string> {
     .eq('id', userId)
     .single()
 
-  if (fetchError && !fetchError.message?.includes('PGRST116')) {
+  console.log('Existing profile check:', { existingProfile, fetchError })
+
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    console.log('Profile fetch error is not PGRST116, throwing:', fetchError)
     throw fetchError
   }
+
+  console.log('About to update/upsert profile with API key')
 
   const { error } = existingProfile
     ? await supabase.from('profiles').update({ sms_api_key: apiKey }).eq('id', userId)
@@ -102,6 +114,8 @@ export async function generateSmsApiKey(): Promise<string> {
         sms_api_key: apiKey,
         base_currency: 'INR',
       })
+
+  console.log('Profile update result:', { error, existingProfile })
 
   if (error) {
     // Provide a helpful message for migration issues
@@ -112,6 +126,8 @@ export async function generateSmsApiKey(): Promise<string> {
         : error.message,
     )
   }
+  
+  console.log('API key generation completed successfully')
   return apiKey
 }
 
@@ -127,6 +143,8 @@ export async function fetchSmsApiKey(): Promise<string | null> {
       .eq('id', userId)
       .single()
 
+    console.log('fetchSmsApiKey result:', { data, error })
+
     // If the query fails because the column doesn't exist, the migration wasn't applied.
     // This is not a critical error — the user just hasn't generated a key yet.
     if (error) {
@@ -134,7 +152,9 @@ export async function fetchSmsApiKey(): Promise<string | null> {
       return null
     }
 
-    return (data as { sms_api_key: string | null } | null)?.sms_api_key ?? null
+    const apiKey = (data as { sms_api_key: string | null } | null)?.sms_api_key ?? null
+    console.log('Extracted API key:', apiKey)
+    return apiKey
   } catch (err) {
     // Never throw for a missing key — the UI should still allow generating one.
     console.warn('[sms] Error fetching API key:', err)

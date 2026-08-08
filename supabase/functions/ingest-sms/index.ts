@@ -10,7 +10,7 @@
 // app's encrypted preferences (set in the web app's SMS settings page).
 // The key is validated against the user's sms_api_key in their profile.
 
-import { corsHeaders, jsonResponse } from '../parse-statement/lib/cors.ts'
+import { corsHeaders, jsonResponse } from './lib/cors.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.110.0'
 
 // ---------------------------------------------------------------------------

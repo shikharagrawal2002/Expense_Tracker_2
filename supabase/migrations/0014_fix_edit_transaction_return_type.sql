@@ -1,14 +1,14 @@
 -- ============================================================================
--- Migration 0004: atomic transaction edit (respects the balance-trigger design)
+-- Migration 0014: Fix edit_transaction RPC function return type
 --
--- 0001_init.sql's trg_txn_balance trigger only fires on INSERT/DELETE, with a
--- note that UPDATEs should be handled explicitly at the application layer.
--- This function does that: it reverses the old row's effect on account
--- balances, applies the new values, and updates the row — all atomically, so
--- a half-applied edit can never leave a balance wrong.
+-- Updates the edit_transaction function to return JSON for anon key compatibility.
 -- ============================================================================
 
-create or replace function public.edit_transaction(
+-- Drop existing function first
+drop function if exists public.edit_transaction(uuid,uuid,uuid,uuid,public.transaction_type,numeric,timestamptz,text);
+
+-- Recreate edit_transaction to return JSON
+create function public.edit_transaction(
   p_id uuid,
   p_account_id uuid,
   p_transfer_account_id uuid,

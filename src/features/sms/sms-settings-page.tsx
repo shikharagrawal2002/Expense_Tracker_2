@@ -69,7 +69,7 @@ export function SmsSettingsPage() {
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 num text-xs surface-2 border border-hairline rounded-lg px-3 py-2.5">
-              {keyLoading ? 'Loading…' : showKey ? apiKey ?? 'Not generated yet' : apiKey ? `${apiKey.slice(0, 12)}…` : 'Not generated yet'}
+              {keyLoading ? 'Loading…' : showKey ? (apiKey || 'Not generated yet') : (apiKey ? `${apiKey.slice(0, 12)}…` : 'Not generated yet')}
             </code>
             <Button size="sm" variant="secondary" onClick={() => setShowKey((s) => !s)} disabled={!apiKey}>
               {showKey ? 'Hide' : 'Show'}

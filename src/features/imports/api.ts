@@ -79,6 +79,7 @@ export async function fetchImportBatches(): Promise<ImportBatch[]> {
 export async function undoImportBatch(id: string): Promise<void> {
   const { error } = await supabase.rpc('undo_import_batch', { p_batch_id: id })
   if (error) throw error
+  // No return value needed, just check for errors
 }
 
 /** Bulk-inserts confirmed transactions from a review table. Supabase's insert

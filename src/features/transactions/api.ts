@@ -73,7 +73,7 @@ export interface EditTransactionInput {
  *  account-balance reversal/reapply happens atomically, since the balance
  *  trigger only fires on INSERT/DELETE and not on UPDATE. */
 export async function editTransaction(input: EditTransactionInput): Promise<Transaction> {
-  const { data, error } = await supabase.rpc('edit_transaction', {
+  const { error } = await supabase.rpc('edit_transaction', {
     p_id: input.id,
     p_account_id: input.account_id,
     p_transfer_account_id: input.transfer_account_id ?? null,
@@ -84,7 +84,14 @@ export async function editTransaction(input: EditTransactionInput): Promise<Tran
     p_notes: input.notes ?? null,
   })
   if (error) throw error
-  return data as Transaction
+  // After editing, fetch the updated transaction to return it
+  const { data: updatedTxn, error: fetchError } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('id', input.id)
+    .single()
+  if (fetchError) throw fetchError
+  return updatedTxn as Transaction
 }
 
 /** Reconstructs what the selected accounts' (or, if accountIds is empty, every
