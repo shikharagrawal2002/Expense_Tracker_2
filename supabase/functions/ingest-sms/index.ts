@@ -25,21 +25,25 @@ interface ParsedSms {
 }
 
 // UPI transaction patterns
-const UPI_DEBIT_RE = /(?:Rs|₹|INR)\s?([\d,]+\.?\d*)\s*(?:debited|deducted|paid)\s*(?:from|by|via|for)?\s*(.+?)(?:\.|$)/i
-const UPI_CREDIT_RE = /(?:Rs|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|received|added)\s*(?:to|by|from|via)?\s*(.+?)(?:\.|$)/i
+const UPI_DEBIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:debited|deducted|paid)\s*(?:from|by|via|for)?\s*(.+?)(?:\.|$)/i
+const UPI_CREDIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|received|added)\s*(?:to|by|from|via)?\s*(.+?)(?:\.|$)/i
 
 // Card transaction patterns
-const CARD_DEBIT_RE = /(?:Rs|₹|INR)\s?([\d,]+\.?\d*)\s*(?:spent|withdrawn|used|debited|purchase|txn)\s*(?:at|on|via)?\s*(.+?)(?:\.|$)/i
-const CARD_CREDIT_RE = /(?:Rs|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|refund|payment received|cashback)\s*(?:at|from|on|via)?\s*(.+?)(?:\.|$)/i
+const CARD_DEBIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:spent|withdrawn|used|debited|purchase|txn)\s*(?:at|on|via)?\s*(.+?)(?:\.|$)/i
+const CARD_CREDIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|refund|payment received|cashback)\s*(?:at|from|on|via)?\s*(.+?)(?:\.|$)/i
 
-// Generic amount extraction
-const AMOUNT_RE = /(?:Rs|₹|INR)\s?([\d,]+\.?\d*)/i
+// Generic amount extraction (with currency prefix)
+const AMOUNT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)/i
+
+// Plain decimal amount extraction (e.g. "51.00", "1,234.56") — used as a
+// fallback for bank SMS that don't prefix the amount with a currency symbol.
+const DECIMAL_AMOUNT_RE = /\b(\d{1,3}(?:,\d{3})*\.\d{2})\b/
 
 // Bank name detection
 const BANK_PATTERNS: Array<[RegExp, string]> = [
   [/(HDFC\s*Bank|HDFCBK)/i, 'HDFC Bank'],
   [/(ICICI\s*Bank|ICICIB)/i, 'ICICI Bank'],
-  [/(SBI|State\s*Bank\s*of\s*India)/i, 'SBI'],
+  [/(SBI\s*Credit\s*Card|SBI|State\s*Bank\s*of\s*India)/i, 'SBI'],
   [/(Axis\s*Bank|AXISB)/i, 'Axis Bank'],
   [/(Kotak\s*Mahindra|KOTAKB)/i, 'Kotak Mahindra'],
   [/(Yes\s*Bank|YESBANK)/i, 'Yes Bank'],
@@ -118,7 +122,7 @@ function parseSmsText(text: string): ParsedSms {
     return { amount, type, description, merchant }
   }
 
-  // Fallback: just extract any amount
+  // Fallback: try currency-prefixed amount first
   const amountMatch = text.match(AMOUNT_RE)
   if (amountMatch) {
     amount = parseAmount(amountMatch[1])
@@ -126,6 +130,17 @@ function parseSmsText(text: string): ParsedSms {
     if (/debited|spent|paid|purchase|withdrawn|used/i.test(text)) type = 'debit'
     else if (/credited|received|refund|cashback|added/i.test(text)) type = 'credit'
     description = text.replace(AMOUNT_RE, '').trim().substring(0, 200)
+    return { amount, type, description, merchant }
+  }
+
+  // Fallback: try plain decimal amount (e.g. "51.00", "1,234.56")
+  const decimalAmountMatch = text.match(DECIMAL_AMOUNT_RE)
+  if (decimalAmountMatch) {
+    amount = parseAmount(decimalAmountMatch[1])
+    // Detect debit/credit from keywords
+    if (/debited|spent|paid|purchase|withdrawn|used/i.test(text)) type = 'debit'
+    else if (/credited|received|refund|cashback|added/i.test(text)) type = 'credit'
+    description = text.replace(DECIMAL_AMOUNT_RE, '').trim().substring(0, 200)
   }
 
   return { amount, type, description, merchant }
@@ -186,6 +201,15 @@ Deno.serve(async (req: Request) => {
 
     if (!apiKey || !rawText || !senderPhone) {
       return jsonResponse({ error: 'apiKey, senderPhone, and rawText are required' }, 400)
+    }
+
+    // Skip OTP / verification / one-time password messages
+    if (
+      /otp|one\s*time\s*password|one-time\s*password|verification\s*code|do\s*not\s*share|never\s*share/i.test(
+        rawText,
+      )
+    ) {
+      return jsonResponse({ skipped: true, reason: 'OTP message' }, 200)
     }
 
     const supabase = createSupabaseClient()

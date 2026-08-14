@@ -49,10 +49,10 @@ export function TransactionsPage() {
   })
 
   // "Previous month final balance": the closing balance as of the start of the
-  // statement cycle (which is, by definition, the last day of the previous month).
+  // selected date range (last day of previous month for both this-month and cycle).
   const { data: previousMonthBalance } = useBalanceAsOf(
     accountIds,
-    datePreset === 'cycle' ? statementCycle.start : undefined,
+    (datePreset === 'cycle' || datePreset === 'this-month') ? statementCycle.start : undefined,
   )
 
   return (
@@ -123,7 +123,7 @@ export function TransactionsPage() {
           >
             <ChevronRight className="h-4 w-4" />
           </button>
-          {datePreset === 'cycle' && previousMonthBalance !== undefined && (
+          {(datePreset === 'cycle' || datePreset === 'this-month') && previousMonthBalance !== undefined && (
             <span className="ml-2 text-muted">
               Previous month final balance:{' '}
               <span className="font-medium text-inherit">{formatCurrency(previousMonthBalance)}</span>

@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit
 
 /**
  * BroadcastReceiver that intercepts incoming SMS messages.
- * Filters for bank/UPI transaction messages and forwards them
- * to the Supabase ingest-sms Edge Function.
+ * Skips OTP messages and only forwards bank/UPI transaction messages
+ * that contain a monetary value to the Supabase ingest-sms Edge Function.
  */
 class SmsReceiver : BroadcastReceiver() {
 
@@ -62,9 +62,18 @@ class SmsReceiver : BroadcastReceiver() {
             val senderPhone = sms.originatingAddress ?: continue
             val receivedAt = sms.timestampMillis
 
-            // If filtering is enabled, skip non-bank SMS
-            if (enabledOnly && !isBankSms(messageBody)) {
-                Log.d(TAG, "Skipping non-bank SMS from $senderPhone")
+            // Always skip OTP / one-time password / verification code messages
+            if (isOtpSms(messageBody)) {
+                Log.d(TAG, "Skipping OTP SMS from $senderPhone")
+                continue
+            }
+
+            // If filtering is enabled, only forward messages that contain a
+            // monetary value (e.g. Rs 500, ₹51.00, 51.00) AND a transaction
+            // keyword. This filters out random bank messages (offers, balance
+            // alerts, promotions, etc.).
+            if (enabledOnly && !isTransactionSms(messageBody)) {
+                Log.d(TAG, "Skipping non-transaction SMS from $senderPhone")
                 continue
             }
 
@@ -76,18 +85,34 @@ class SmsReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun isBankSms(text: String): Boolean {
-        val keywords = listOf(
-            "debited", "credited", "spent", "paid", "purchase",
-            "upi", "trf", "withdrawn", "refund", "cashback",
-            "used", "txn", "account", "balance", "reward",
-            "emi", "bill", "payment", "received", "sent",
-            "hdfc", "icici", "sbi", "axis", "kotak", "yes bank",
-            "indusind", "idfc", "paytm", "phonepe", "gpay",
-            "google pay", "amazon pay", "bhim"
-        )
+    /**
+     * Returns true if the message is an OTP / one-time password / verification code.
+     */
+    private fun isOtpSms(text: String): Boolean {
         val lower = text.lowercase()
-        return keywords.any { lower.contains(it) }
+        return OTP_KEYWORDS.any { lower.contains(it) }
+    }
+
+    /**
+     * Returns true if the message contains both a monetary value and a
+     * transaction keyword.
+     *
+     * The amount must be either:
+     *  - prefixed with a currency symbol/prefix (Rs 500, Rs.51.00, ₹1,234, INR 56,789), or
+     *  - a number with decimal places (51.00, 1,234.56)
+     *
+     * This prevents random bank SMS (offers, balance alerts, promotions)
+     * from being forwarded.
+     */
+    private fun isTransactionSms(text: String): Boolean {
+        val lower = text.lowercase()
+
+        // Must contain a monetary value
+        val hasAmount = AMOUNT_PREFIX_RE.containsMatchIn(text) || DECIMAL_AMOUNT_RE.containsMatchIn(text)
+        if (!hasAmount) return false
+
+        // Must also contain a transaction keyword
+        return TRANSACTION_KEYWORDS.any { lower.contains(it) }
     }
 
     private fun forwardSms(
@@ -147,5 +172,27 @@ class SmsReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "SmsReceiver"
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+
+        // Rs 500, Rs.51.00, ₹1,234, INR 56,789 — currency prefix + number
+        private val AMOUNT_PREFIX_RE = Regex("""(?:rs\.?|inr|₹)\s?\d[\d,]*\.?\d*""", RegexOption.IGNORE_CASE)
+
+        // 51.00 / 1,234.56 — numbers with decimal places (bank SMS without a currency prefix)
+        private val DECIMAL_AMOUNT_RE = Regex("""\b\d{1,3}(?:,\d{3})*\.\d{2}\b""")
+
+        private val TRANSACTION_KEYWORDS = listOf(
+            "debited", "credited", "spent", "paid", "purchase",
+            "upi", "trf", "withdrawn", "refund", "cashback",
+            "used", "txn", "payment", "received", "sent",
+            "emi", "bill", "recharge", "recharged",
+        )
+
+        private val OTP_KEYWORDS = listOf(
+            "otp",
+            "one time password",
+            "one-time password",
+            "verification code",
+            "do not share",
+            "never share",
+        )
     }
 }

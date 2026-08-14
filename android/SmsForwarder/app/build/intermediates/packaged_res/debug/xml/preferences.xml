@@ -21,7 +21,7 @@
         <SwitchPreferenceCompat
             android:key="filter_bank_sms"
             android:title="Only forward bank/UPI SMS"
-            android:summary="Only forward messages containing transaction keywords (debited, credited, UPI, etc.)"
+            android:summary="Only forward messages containing a monetary value (e.g. Rs 500, INR 51.00) plus a transaction keyword. OTP messages are always skipped."
             android:defaultValue="true" />
     </PreferenceCategory>
 
@@ -29,7 +29,7 @@
         <Preference
             android:key="about"
             android:title="Ledger SMS Forwarder"
-            android:summary="Sends your bank/UPI transaction SMS to your Ledger expense tracker. Messages are parsed and stored for review — nothing is saved to your Ledger without your confirmation."
+            android:summary="Sends your bank/UPI transaction SMS to your Ledger expense tracker. Messages are parsed and stored for review - nothing is saved to your Ledger without your confirmation."
             android:selectable="false" />
     </PreferenceCategory>
 

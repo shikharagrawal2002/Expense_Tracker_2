@@ -52,6 +52,7 @@ supabase functions deploy ingest-sms --no-verify-jwt
 ## Privacy
 
 - The app only reads SMS broadcasts — it does NOT become your default SMS app
-- Only SMS messages containing bank/UPI keywords (debited, credited, UPI, etc.) are forwarded
+- OTP / one-time password / verification code messages are always skipped
+- Only SMS messages containing both a monetary value (e.g. `Rs 500`, `INR 51.00`, `51.00`) AND a transaction keyword (debited, credited, UPI, etc.) are forwarded
 - Raw SMS text is stored in your Supabase database for review
 - You can disable forwarding at any time by uninstalling the app or revoking SMS permission

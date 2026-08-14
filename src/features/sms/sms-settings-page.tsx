@@ -118,6 +118,9 @@ export function SmsSettingsPage() {
             <li>Open the app and grant SMS permission</li>
             <li>Go to Settings and enter:</li>
           </ol>
+          <p className="text-xs text-muted rounded-lg surface-2 border border-hairline p-2.5">
+            The app only forwards messages that contain a monetary value (e.g. Rs 500, INR 51.00) plus a transaction keyword, and always skips OTP messages.
+          </p>
           <div className="rounded-lg surface-2 border border-hairline p-3 space-y-2">
             <div>
               <p className="text-xs font-medium text-muted">Server URL:</p>
