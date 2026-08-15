@@ -25,6 +25,8 @@ import { extractContent } from './lib/extract-rows.ts'
 import { parseBankStatement, type BankProvider } from './lib/bank-parsers.ts'
 import { parseCardStatement } from './lib/card-parsers.ts'
 import { flagDuplicates } from './lib/dedupe.ts'
+import { encryptPassword, decryptPassword } from './lib/password-crypto.ts'
+import { createClient } from 'npm:@supabase/supabase-js@2.110.0'
 
 // Inlined rather than imported from ./lib/types.ts — see the note in
 // lib/dedupe.ts for why: that file is type-only and some deploy pipelines
@@ -37,6 +39,40 @@ interface ParseRequestBody {
   accountId: string
   provider?: BankProvider
   password?: string
+  /** When true and a password is supplied, the password is encrypted and
+   *  stored in statement_passwords keyed by the resolved bank for the next
+   *  import — the user only has to type it once per bank. */
+  savePassword?: boolean
+}
+
+/** Resolves which "bank key" a provider maps to for password storage. */
+function bankKeyForProvider(provider?: BankProvider): string {
+  return (provider ?? 'generic') as string
+}
+
+/** Creates a Supabase client using the anon key (JWT-scoped to the caller). */
+function createSupabaseClient(authHeader?: string | null) {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY are required')
+  }
+  return createClient(supabaseUrl, anonKey, {
+    global: {
+      headers: authHeader ? { Authorization: authHeader } : undefined,
+    },
+  })
+}
+
+/** Extracts the subject (user id) from the caller's JWT. Returns null if unable. */
+function extractUserId(authHeader: string): string | null {
+  try {
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.sub ?? null
+  } catch {
+    return null
+  }
 }
 
 interface ParsedTransaction {
@@ -85,7 +121,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Invalid JSON body' }, 400)
   }
 
-  const { kind, fileName, mimeType, fileBase64, accountId, provider, password } = body
+  const { kind, fileName, mimeType, fileBase64, accountId, provider, password, savePassword } = body
   if (!kind || !fileName || !fileBase64 || !accountId) {
     return jsonResponse(
       { error: 'kind, fileName, fileBase64, and accountId are all required' },
@@ -99,8 +135,53 @@ Deno.serve(async (req: Request) => {
   const warnings: string[] = []
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    const bankKey = bankKeyForProvider(provider)
+    let resolvedPassword = password ?? ''
+
+    if (!resolvedPassword && authHeader) {
+      try {
+        const supabase = createSupabaseClient(authHeader)
+        const { data: saved, error: fetchErr } = await supabase
+          .from('statement_passwords')
+          .select('encrypted_password')
+          .eq('bank', bankKey)
+          .single()
+        if (!fetchErr && saved) {
+          const decrypted = await decryptPassword(saved.encrypted_password)
+          if (decrypted) {
+            resolvedPassword = decrypted
+            warnings.push('Using the password saved for this bank.')
+          }
+        }
+      } catch {
+        // Not fatal — parsing will just fail with a "password required" style error.
+      }
+    }
+
+    if (resolvedPassword && savePassword && authHeader) {
+      try {
+        const supabase = createSupabaseClient(authHeader)
+        const userId = extractUserId(authHeader)
+        const encrypted = await encryptPassword(resolvedPassword)
+        const { error: upsertErr } = await supabase
+          .from('statement_passwords')
+          .upsert({
+            user_id: userId,
+            bank: bankKey,
+            encrypted_password: encrypted,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,bank' })
+        if (upsertErr) {
+          warnings.push('Could not save the password for this bank: ' + upsertErr.message)
+        }
+      } catch {
+        warnings.push('Could not save the password for this bank.')
+      }
+    }
+
     const bytes = decodeBase64(fileBase64)
-    const content = await extractContent(fileName, mimeType || '', bytes, password)
+    const content = await extractContent(fileName, mimeType || '', bytes, resolvedPassword)
 
     let result: ParseResult
     if (kind === 'bank') {

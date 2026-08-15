@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Landmark, CreditCard, AlertTriangle } from 'lucide-react'
+import { Landmark, CreditCard, AlertTriangle, Check, Trash2, KeyRound, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -10,7 +10,14 @@ import { StatementDropzone } from '@/features/imports/statement-dropzone'
 import { ParsedTransactionsTable } from '@/features/imports/parsed-transactions-table'
 import { CardSummaryForm } from '@/features/imports/card-summary-form'
 import { ImportHistoryList } from '@/features/imports/import-history-list'
-import { useParseStatement, useConfirmBankImport, useConfirmCardImport } from '@/features/imports/hooks'
+import {
+  useParseStatement,
+  useConfirmBankImport,
+  useConfirmCardImport,
+  useSavedStatementBanks,
+  useDeleteSavedStatementBank,
+  useSaveStatementPassword,
+} from '@/features/imports/hooks'
 import { toReviewRow, type ImportKind, type ReviewRow } from '@/features/imports/types'
 import type { CardStatementSummary, NewTransaction, BankProvider } from '@/lib/supabase/types'
 
@@ -47,6 +54,8 @@ export function ImportsPage() {
   const [provider, setProvider] = useState<BankProvider>('hsbc')
   const [file, setFile] = useState<File | null>(null)
   const [password, setPassword] = useState('')
+  const [passwordSaved, setPasswordSaved] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
   const [rows, setRows] = useState<ReviewRow[]>([])
   const [cardSummary, setCardSummary] = useState<CardStatementSummary | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
@@ -54,6 +63,9 @@ export function ImportsPage() {
 
   const { data: accounts } = useAccounts()
   const { data: categories } = useCategories()
+  const { data: savedBanks = [] } = useSavedStatementBanks()
+  const deleteSavedBank = useDeleteSavedStatementBank()
+  const saveStatementPassword = useSaveStatementPassword()
   const parseStatement = useParseStatement()
   const confirmBank = useConfirmBankImport()
   const confirmCard = useConfirmCardImport()
@@ -64,6 +76,7 @@ export function ImportsPage() {
   )
 
   const account = accounts?.find((a) => a.id === accountId)
+  const hasSavedPassword = savedBanks.includes(provider)
 
   function resetResults() {
     setRows([])
@@ -78,13 +91,42 @@ export function ImportsPage() {
     setProvider('hsbc')
     setFile(null)
     setPassword('')
+    setPasswordSaved(false)
+    setPasswordError(null)
     resetResults()
+  }
+
+  function handleProviderChange(nextProvider: BankProvider) {
+    setProvider(nextProvider)
+    setPassword('')
+    setPasswordSaved(false)
+    setPasswordError(null)
+    resetResults()
+  }
+
+  async function handleSavePassword() {
+    setPasswordError(null)
+    if (!password) return
+    try {
+      await saveStatementPassword.mutateAsync({ provider, password })
+      setPassword('')
+      setPasswordSaved(true)
+      setTimeout(() => setPasswordSaved(false), 2000)
+    } catch (err) {
+      setPasswordError((err as Error).message)
+    }
   }
 
   async function handleParse() {
     if (!file || !accountId) return
     resetResults()
-    const result = await parseStatement.mutateAsync({ file, kind, accountId, provider, password })
+    const result = await parseStatement.mutateAsync({
+      file,
+      kind,
+      accountId,
+      provider,
+      password,
+    })
     setRows(result.transactions.map((t, i) => toReviewRow(t, i, null)))
     if (result.cardSummary) setCardSummary(result.cardSummary)
     setWarnings(result.warnings)
@@ -190,7 +232,7 @@ export function ImportsPage() {
         <CardContent className="space-y-4">
           <div>
             <Label>Bank</Label>
-            <Select value={provider} onChange={(e) => setProvider(e.target.value as BankProvider)}>
+            <Select value={provider} onChange={(e) => handleProviderChange(e.target.value as BankProvider)}>
               {BANK_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
@@ -227,26 +269,86 @@ export function ImportsPage() {
             onFileSelected={(f) => {
               setFile(f)
               setPassword('')
+              setPasswordError(null)
               resetResults()
             }}
             disabled={!accountId}
           />
 
-          {file?.name.toLowerCase().endsWith('.pdf') && (
-            <div>
-              <Label htmlFor="pdf-password">PDF password (if locked)</Label>
-              <Input
-                id="pdf-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Leave blank if this PDF isn't password-protected"
-                autoComplete="off"
-              />
-              <p className="mt-1 text-xs text-muted">
-                Common for credit card statements — many issuers lock the PDF with your PAN, date of birth, or
-                similar. This is sent straight to Supabase to unlock the file for parsing; it isn't stored anywhere.
-              </p>
+          {file && /\.(pdf|xls|xlsx)$/i.test(file.name) && (
+            <div className="space-y-2">
+              <div>
+                <Label htmlFor="pdf-password">Statement password (if locked)</Label>
+                <Input
+                  id="pdf-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={
+                    hasSavedPassword
+                      ? 'Leave blank to use the saved password for this bank'
+                      : 'Leave blank if this PDF/Excel file is not password-protected'
+                  }
+                  autoComplete="off"
+                />
+                <p className="mt-1 text-xs text-muted">
+                  {hasSavedPassword
+                    ? `This bank has a saved password — you can leave this blank and it will be used automatically.`
+                    : 'Common for credit card statements — many issuers lock the PDF with your PAN, date of birth, or similar.'}
+                </p>
+              </div>
+
+              {!hasSavedPassword && password && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleSavePassword}
+                    disabled={saveStatementPassword.isPending}
+                  >
+                    {saveStatementPassword.isPending ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <KeyRound className="h-3.5 w-3.5" />
+                    )}
+                    {passwordSaved ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Password saved
+                      </>
+                    ) : (
+                      'Save password'
+                    )}
+                  </Button>
+                  <span className="text-xs text-muted">
+                    Save this password for <strong>{BANK_OPTIONS.find((b) => b.value === provider)?.label}</strong> statements so you only enter it once. It is encrypted before being stored.
+                  </span>
+                </div>
+              )}
+              {passwordError && (
+                <p className="text-xs text-[var(--color-negative-600)]">{passwordError}</p>
+              )}
+
+              {hasSavedPassword && (
+                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-positive-500)]/40 bg-[var(--color-positive-500)]/10 px-3 py-2 text-sm">
+                  <Check className="h-4 w-4 shrink-0 text-[var(--color-positive-600)]" />
+                  <span className="flex-1 text-muted">
+                    Saved password for <strong>{BANK_OPTIONS.find((b) => b.value === provider)?.label}</strong> will be used automatically.
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-[var(--color-negative-600)] hover:text-[var(--color-negative-700)]"
+                    onClick={() => {
+                      deleteSavedBank.mutate(provider)
+                      setPassword('')
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

@@ -7,14 +7,38 @@ import {
   undoImportBatch,
   bulkInsertTransactions,
   upsertCardStatement,
+  fetchSavedBanks,
+  deleteSavedStatementPassword,
+  saveStatementPassword,
 } from '@/features/imports/api'
 import type { ImportKind } from '@/features/imports/types'
 import type { NewTransaction, NewCardStatement, BankProvider } from '@/lib/supabase/types'
 
 const IMPORT_BATCHES_KEY = ['import-batches'] as const
+const SAVED_BANKS_KEY = ['saved-statement-banks'] as const
 
 export function useImportBatches() {
   return useQuery({ queryKey: IMPORT_BATCHES_KEY, queryFn: fetchImportBatches })
+}
+
+export function useSavedStatementBanks() {
+  return useQuery({ queryKey: SAVED_BANKS_KEY, queryFn: fetchSavedBanks })
+}
+
+export function useDeleteSavedStatementBank() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (bank: string) => deleteSavedStatementPassword(bank),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SAVED_BANKS_KEY }),
+  })
+}
+
+export function useSaveStatementPassword() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: { provider: BankProvider; password: string }) => saveStatementPassword(params),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: SAVED_BANKS_KEY }),
+  })
 }
 
 export function useParseStatement() {
@@ -25,6 +49,7 @@ export function useParseStatement() {
       accountId: string
       provider?: BankProvider
       password?: string
+      savePassword?: boolean
     }) => parseStatementFile(params),
   })
 }

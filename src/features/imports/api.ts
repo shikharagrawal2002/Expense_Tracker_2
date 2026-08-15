@@ -29,6 +29,8 @@ export async function parseStatementFile(params: {
   accountId: string
   provider?: BankProvider
   password?: string
+  /** When true, the password (if provided) is saved encrypted for this bank. */
+  savePassword?: boolean
 }): Promise<ParseStatementResult> {
   const fileBase64 = await readFileAsBase64(params.file)
   const { data, error } = await supabase.functions.invoke<ParseStatementResult>('parse-statement', {
@@ -36,6 +38,7 @@ export async function parseStatementFile(params: {
       kind: params.kind,
       provider: params.provider,
       password: params.password || undefined,
+      savePassword: params.savePassword || undefined,
       accountId: params.accountId,
       fileName: params.file.name,
       mimeType: params.file.type,
@@ -107,4 +110,61 @@ export async function upsertCardStatement(input: NewCardStatement): Promise<Card
     .single()
   if (error) throw error
   return data as CardStatement
+}
+
+// ---------------------------------------------------------------------------
+// Saved statement passwords (per bank)
+// ---------------------------------------------------------------------------
+
+export async function fetchSavedBanks(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('statement_passwords')
+    .select('bank')
+    .order('bank')
+  if (error) {
+    // If the migration hasn't been applied, treat as "no saved passwords".
+    const isMissingRelation =
+      error.code === '42P01' ||
+      error.code === 'PGRST204' ||
+      error.message?.includes('relation') ||
+      error.message?.includes('column') ||
+      error.message?.includes('does not exist')
+    if (isMissingRelation) return []
+    throw error
+  }
+  return (data ?? []).map((row: { bank: string }) => row.bank)
+}
+
+export async function deleteSavedStatementPassword(bank: string): Promise<void> {
+  const { error } = await supabase.from('statement_passwords').delete().eq('bank', bank)
+  if (error) throw error
+}
+
+/** Saves a statement password for a bank without parsing a file. The password
+ *  is encrypted server-side in the parse-statement edge function. */
+export async function saveStatementPassword(params: {
+  provider: BankProvider
+  password: string
+}): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('parse-statement', {
+    body: {
+      kind: 'card',
+      provider: params.provider,
+      password: params.password,
+      savePassword: true,
+      // Dummy values to pass validation — the password is saved before parsing
+      // is attempted, so the parse failure on dummy data is expected and ignored.
+      fileName: 'dummy.pdf',
+      mimeType: 'application/pdf',
+      fileBase64: 'dummy',
+      accountId: 'dummy',
+    },
+  })
+  // The edge function saves the password BEFORE attempting to parse. If parsing
+  // fails (which it will with dummy data), the password was still saved. Only
+  // throw if the error is a validation error (meaning the password wasn't saved).
+  const errorMessage = error?.message ?? data?.error
+  if (errorMessage && errorMessage.includes('kind, fileName, fileBase64, and accountId are all required')) {
+    throw new Error(errorMessage)
+  }
 }

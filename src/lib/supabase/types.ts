@@ -212,6 +212,15 @@ export interface CardStatementSummary {
   cycleEndDate: string | null
 }
 
+export interface StatementPassword {
+  id: string
+  user_id: string
+  bank: string
+  encrypted_password: string
+  created_at: string
+  updated_at: string
+}
+
 export interface ParseStatementResult {
   transactions: ParsedTransaction[]
   cardSummary?: CardStatementSummary

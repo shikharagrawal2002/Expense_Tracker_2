@@ -109,6 +109,7 @@ export async function extractContent(
       }
       throw err
     }
+
     const { text } = await extractText(pdf, { mergePages: true })
     const lines = String(text)
       .split(/\r\n|\r|\n/)

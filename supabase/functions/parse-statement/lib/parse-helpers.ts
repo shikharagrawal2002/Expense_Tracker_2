@@ -44,11 +44,6 @@ export function parseStatementDate(raw: string): string | null {
   return null
 }
 
-/** Same date formats as parseStatementDate, but matched at the START of a
- *  longer line (not requiring the whole line to be just a date) — used to
- *  detect where a new transaction begins in PDF text where the description
- *  wraps across multiple lines, so the date, amount, and balance can end up
- *  on different lines than where the transaction started. */
 const LEADING_DATE_PATTERNS = [
   /^(\d{4}-\d{1,2}-\d{1,2})\b/,
   /^(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\b/,
