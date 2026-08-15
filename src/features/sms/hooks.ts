@@ -4,11 +4,13 @@ import {
   fetchSmsHistory,
   confirmSmsTransaction,
   skipSmsTransaction,
+  updateSmsTransaction,
   fetchSmsSources,
   createSmsSource,
   deleteSmsSource,
   generateSmsApiKey,
   fetchSmsApiKey,
+  type SmsTransactionEdits,
 } from '@/features/sms/api'
 
 const PENDING_SMS_KEY = ['sms-pending'] as const
@@ -27,8 +29,17 @@ export function useSmsHistory() {
 export function useConfirmSms() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ smsId, accountId, categoryId }: { smsId: string; accountId: string; categoryId?: string }) =>
-      confirmSmsTransaction(smsId, accountId, categoryId),
+    mutationFn: ({
+      smsId,
+      accountId,
+      categoryId,
+      edits,
+    }: {
+      smsId: string
+      accountId: string
+      categoryId?: string
+      edits?: SmsTransactionEdits
+    }) => confirmSmsTransaction(smsId, accountId, categoryId, edits),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PENDING_SMS_KEY })
       queryClient.invalidateQueries({ queryKey: SMS_HISTORY_KEY })
@@ -45,6 +56,22 @@ export function useSkipSms() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PENDING_SMS_KEY })
       queryClient.invalidateQueries({ queryKey: SMS_HISTORY_KEY })
+    },
+  })
+}
+
+export function useUpdateSms() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      smsId,
+      edits,
+    }: {
+      smsId: string
+      edits: SmsTransactionEdits & { accountId?: string | null }
+    }) => updateSmsTransaction(smsId, edits),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PENDING_SMS_KEY })
     },
   })
 }

@@ -23,15 +23,27 @@ export async function fetchSmsHistory(): Promise<SmsTransaction[]> {
   return data as unknown as SmsTransaction[]
 }
 
+export interface SmsTransactionEdits {
+  amount?: number | null
+  type?: 'debit' | 'credit' | null
+  merchant?: string | null
+  description?: string | null
+}
+
 export async function confirmSmsTransaction(
   smsId: string,
   accountId: string,
   categoryId?: string,
+  edits?: SmsTransactionEdits,
 ): Promise<string> {
   const { data, error } = await supabase.rpc('confirm_sms_transaction', {
     p_sms_id: smsId,
     p_account_id: accountId,
     p_category_id: categoryId ?? null,
+    p_amount: edits?.amount ?? null,
+    p_type: edits?.type ?? null,
+    p_merchant: edits?.merchant ?? null,
+    p_description: edits?.description ?? null,
   })
   console.log('confirmSmsTransaction response:', { data, error })
   if (error) throw error
@@ -46,6 +58,22 @@ export async function skipSmsTransaction(smsId: string): Promise<void> {
   console.log('skipSmsTransaction response:', { data, error })
   if (error) throw error
   // No return value needed, just check for errors
+}
+
+export async function updateSmsTransaction(
+  smsId: string,
+  edits: SmsTransactionEdits & { accountId?: string | null },
+): Promise<void> {
+  const { data, error } = await supabase.rpc('update_sms_transaction', {
+    p_sms_id: smsId,
+    p_amount: edits.amount ?? null,
+    p_type: edits.type ?? null,
+    p_merchant: edits.merchant ?? null,
+    p_description: edits.description ?? null,
+    p_account_id: edits.accountId ?? null,
+  })
+  console.log('updateSmsTransaction response:', { data, error })
+  if (error) throw error
 }
 
 export async function fetchSmsSources(): Promise<SmsSource[]> {
