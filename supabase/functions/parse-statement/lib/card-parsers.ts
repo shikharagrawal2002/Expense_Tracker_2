@@ -1,4 +1,4 @@
-import { parseAmount, parseStatementDate } from './parse-helpers.ts'
+import { parseAmount, parseStatementDate, findAllDateOccurrences, INDIAN_DECIMAL_SOURCE } from './parse-helpers.ts'
 import { parseBankStatement, type BankProvider } from './bank-parsers.ts'
 
 // Inlined rather than imported from ./types.ts — see the note in dedupe.ts
@@ -38,35 +38,61 @@ const LABELS = {
   cycleEnd: [/period\s*to/i, /transaction\s*to/i, /to\s*date/i, /^to/i],
 }
 
-/** Finds a "from … to …" range in a single token (e.g. "15-Jun-2026 to 14-Jul-2026")
- *  or across adjacent cells in a row, returning both ends. */
-function scanForCycleRange(tokenRows: string[][]): { start: string | null; end: string | null } {
-  for (const tokens of tokenRows) {
-    // Same-cell range, e.g. "Statement Period: 15-Jun-2026 to 14-Jul-2026"
-    for (const token of tokens) {
-      const rangeMatch = token.match(/(\b\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}\b)\s*(?:to|-|–)\s*(\b\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}\b)/i)
-      if (rangeMatch) {
-        const start = parseStatementDate(rangeMatch[1])
-        const end = parseStatementDate(rangeMatch[2])
-        if (start && end) return { start, end }
-      }
-    }
+/** Looks for a label (e.g. "Payment Due Date") anywhere in a continuous PDF
+ *  text string, then searches a short window right after it for a date. Works
+ *  even when the whole statement extracted as one line with no reliable
+ *  breaks between fields — the same real-world quirk that affects the
+ *  transaction parser (see bank-parsers.ts's preprocessPdfText). */
+function findLabeledDateInText(text: string, labelPatterns: RegExp[], windowSize = 40): string | null {
+  for (const labelPattern of labelPatterns) {
+    const match = labelPattern.exec(text)
+    if (!match || match.index === undefined) continue
+    const window = text.slice(match.index + match[0].length, match.index + match[0].length + windowSize)
+    const dates = findAllDateOccurrences(window)
+    if (dates.length > 0) return dates[0].date
+  }
+  return null
+}
 
-    // Adjacent cells, e.g. ["From", "15-Jun-2026", "To", "14-Jul-2026"]
-    const startIdx = tokens.findIndex((t) => LABELS.cycleStart.some((p) => p.test(t)))
-    const endIdx = tokens.findIndex((t) => LABELS.cycleEnd.some((p) => p.test(t)))
-    if (startIdx !== -1 && endIdx !== -1) {
-      const startVal = parseStatementDate(tokens[startIdx + 1] ?? '')
-      const endVal = parseStatementDate(tokens[endIdx + 1] ?? '')
-      if (startVal && endVal) return { start: startVal, end: endVal }
+function findLabeledAmountInText(text: string, labelPatterns: RegExp[], windowSize = 40): number | null {
+  const amountRe = new RegExp(`-?₹?\\s?${INDIAN_DECIMAL_SOURCE}`)
+  for (const labelPattern of labelPatterns) {
+    const match = labelPattern.exec(text)
+    if (!match || match.index === undefined) continue
+    const window = text.slice(match.index + match[0].length, match.index + match[0].length + windowSize)
+    const amountMatch = window.match(amountRe)
+    if (amountMatch) {
+      const parsed = parseAmount(amountMatch[0])
+      if (parsed !== null) return parsed
     }
   }
-  return { start: null, end: null }
+  return null
+}
+
+/** Continuous-text variant of scanForCycleRange below — finds a "from … to …"
+ *  billing-cycle range directly in one string via position, rather than
+ *  assuming the two dates land in identifiable adjacent "cells". Tries a
+ *  same-span match first (e.g. "15-Jun-2026 to 14-Jul-2026" appearing
+ *  together), then falls back to locating a start-label and an end-label
+ *  independently and reading the date shortly after each. */
+function findCycleRangeInText(text: string): { start: string | null; end: string | null } {
+  const rangeMatch = text.match(
+    /(\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\s*(?:to|-|–)\s*(\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}|\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i,
+  )
+  if (rangeMatch) {
+    const start = parseStatementDate(rangeMatch[1])
+    const end = parseStatementDate(rangeMatch[2])
+    if (start && end) return { start, end }
+  }
+
+  const start = findLabeledDateInText(text, LABELS.cycleStart)
+  const end = findLabeledDateInText(text, LABELS.cycleEnd)
+  return { start, end }
 }
 
 /** Splits a free-text line into "cell-like" tokens the same way a spreadsheet
- *  row already is one — so the same label→value scan works for both PDF text
- *  and CSV/XLSX rows. */
+ *  row already is one — so the same label→value scan works for CSV/XLSX card
+ *  statement exports, which do have real row/cell structure (unlike PDFs). */
 function tokenize(line: string): string[] {
   return line.split(/\s{2,}|\t|\|/).map((t) => t.trim()).filter(Boolean)
 }
@@ -93,18 +119,56 @@ function scanForLabeledValue<T>(
   return null
 }
 
-function toTokenRows(content: ExtractedContent): string[][] {
-  return content.format === 'table' ? content.rows : content.lines.map(tokenize)
+/** Finds a "from … to …" range in a single token (e.g. "15-Jun-2026 to 14-Jul-2026")
+ *  or across adjacent cells in a row, returning both ends — used for the
+ *  CSV/XLSX (table) path, which has real row/cell structure. */
+function scanForCycleRange(tokenRows: string[][]): { start: string | null; end: string | null } {
+  for (const tokens of tokenRows) {
+    // Same-cell range, e.g. "Statement Period: 15-Jun-2026 to 14-Jul-2026"
+    for (const token of tokens) {
+      const rangeMatch = token.match(/(\b\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}\b)\s*(?:to|-|–)\s*(\b\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4}\b)/i)
+      if (rangeMatch) {
+        const start = parseStatementDate(rangeMatch[1])
+        const end = parseStatementDate(rangeMatch[2])
+        if (start && end) return { start, end }
+      }
+    }
+
+    // Adjacent cells, e.g. ["From", "15-Jun-2026", "To", "14-Jul-2026"]
+    const startIdx = tokens.findIndex((t) => LABELS.cycleStart.some((p) => p.test(t)))
+    const endIdx = tokens.findIndex((t) => LABELS.cycleEnd.some((p) => p.test(t)))
+    if (startIdx !== -1 && endIdx !== -1) {
+      const startVal = parseStatementDate(tokens[startIdx + 1] ?? '')
+      const endVal = parseStatementDate(tokens[endIdx + 1] ?? '')
+      if (startVal && endVal) return { start: startVal, end: endVal }
+    }
+  }
+  return { start: null, end: null }
 }
 
 export function extractCardSummary(content: ExtractedContent, warnings: string[]): CardStatementSummary {
-  const tokenRows = toTokenRows(content)
+  let statementDate: string | null
+  let dueDate: string | null
+  let statementAmount: number | null
+  let minimumDue: number | null
+  let cycleStartDate: string | null
+  let cycleEndDate: string | null
 
-  const statementDate = scanForLabeledValue(tokenRows, LABELS.statementDate, parseStatementDate)
-  const dueDate = scanForLabeledValue(tokenRows, LABELS.dueDate, parseStatementDate)
-  const statementAmount = scanForLabeledValue(tokenRows, LABELS.statementAmount, parseAmount)
-  const minimumDue = scanForLabeledValue(tokenRows, LABELS.minimumDue, parseAmount)
-  const { start: cycleStartDate, end: cycleEndDate } = scanForCycleRange(tokenRows)
+  if (content.format === 'table') {
+    const tokenRows = content.rows
+    statementDate = scanForLabeledValue(tokenRows, LABELS.statementDate, parseStatementDate)
+    dueDate = scanForLabeledValue(tokenRows, LABELS.dueDate, parseStatementDate)
+    statementAmount = scanForLabeledValue(tokenRows, LABELS.statementAmount, parseAmount)
+    minimumDue = scanForLabeledValue(tokenRows, LABELS.minimumDue, parseAmount)
+    ;({ start: cycleStartDate, end: cycleEndDate } = scanForCycleRange(tokenRows))
+  } else {
+    const fullText = content.lines.join(' ')
+    statementDate = findLabeledDateInText(fullText, LABELS.statementDate)
+    dueDate = findLabeledDateInText(fullText, LABELS.dueDate)
+    statementAmount = findLabeledAmountInText(fullText, LABELS.statementAmount)
+    minimumDue = findLabeledAmountInText(fullText, LABELS.minimumDue)
+    ;({ start: cycleStartDate, end: cycleEndDate } = findCycleRangeInText(fullText))
+  }
 
   if (!dueDate || statementAmount === null) {
     warnings.push(

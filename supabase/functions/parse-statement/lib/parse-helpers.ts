@@ -61,9 +61,73 @@ export function extractLeadingDate(line: string): { date: string; rest: string }
   return null
 }
 
+/** Same date shapes as LEADING_DATE_PATTERNS, but scanning for every
+ *  occurrence ANYWHERE in a string rather than only at its very start.
+ *  Needed because unpdf's real extracted text does NOT reliably insert line
+ *  breaks between transaction rows — a whole multi-page statement can come
+ *  back as one continuous line — so "date at the start of a line" is not a
+ *  safe assumption. The negative lookbehind keeps this from matching in the
+ *  middle of a longer digit run (e.g. inside a 20-digit reference number),
+ *  and the negative lookahead for a digit (rather than \b) means a date
+ *  immediately glued to following text with no space — "09/08/2026Registered" —
+ *  still matches correctly (digit→letter isn't a word-boundary in regex terms). */
+const GLOBAL_DATE_PATTERNS = [
+  /(?<![\w/.-])(\d{4}-\d{1,2}-\d{1,2})(?!\d)/g,
+  /(?<![\w/.-])(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})(?!\d)/g,
+  /(?<![\w/.-])(\d{1,2}[\s\-][A-Za-z]{3,9}[\s\-,']+\d{2,4})(?!\d)/g,
+  /(?<![\w/.-])(\d{1,2}[A-Za-z]{3}\d{4})(?!\d)/g,
+]
+
+export interface DateOccurrence {
+  index: number
+  date: string
+  matchLength: number
+}
+
+/** Finds every date-shaped occurrence in a continuous string, in order of
+ *  position. Where two of the pattern variants both match at the same spot,
+ *  the earlier-listed pattern wins and the overlap is skipped. */
+export function findAllDateOccurrences(text: string): DateOccurrence[] {
+  const found: DateOccurrence[] = []
+  for (const pattern of GLOBAL_DATE_PATTERNS) {
+    for (const m of text.matchAll(pattern)) {
+      if (m.index === undefined) continue
+      const iso = parseStatementDate(m[1])
+      if (iso) found.push({ index: m.index, date: iso, matchLength: m[0].length })
+    }
+  }
+  found.sort((a, b) => a.index - b.index)
+
+  const deduped: DateOccurrence[] = []
+  let lastEnd = -1
+  for (const occurrence of found) {
+    if (occurrence.index >= lastEnd) {
+      deduped.push(occurrence)
+      lastEnd = occurrence.index + occurrence.matchLength
+    }
+  }
+  return deduped
+}
+
+/** Source (no anchors) for a properly Indian-grouped number: either
+ *  comma-grouped with the rightmost group having exactly 3 digits (e.g.
+ *  "1,64,246", "13,661"), or a plain ungrouped run of up to 7 digits.
+ *  Deliberately does NOT match an arbitrary run of digits+commas — some PDFs'
+ *  text extraction fuses two adjacent table cells with no separator at all
+ *  (e.g. a date immediately followed by an amount, "13/07/202613,661.00"), and
+ *  a loose "[\d,]+" pattern will happily swallow both into one number.
+ *  Requiring valid grouping forces the match to start at the real number
+ *  instead — confirmed against a real statement where this fusion occurred. */
+export const INDIAN_NUMBER_SOURCE = String.raw`(?:\d{1,2}(?:,\d{2})*,\d{3}|\d{1,7})`
+
+/** Same, but requiring a decimal point + exactly 2 digits — the shape every
+ *  statement we've parsed actually uses for amounts (paise are always shown,
+ *  even for round numbers). */
+export const INDIAN_DECIMAL_SOURCE = `${INDIAN_NUMBER_SOURCE}\\.\\d{2}`
+
 /** Matches a currency amount like "₹12.25", "-₹1,64,246.04", "₹3,000" — the
  *  format this statement style uses instead of a trailing CR/DR suffix. */
-export const AMOUNT_TOKEN_RE = /-?₹\s?[\d,]+(?:\.\d+)?/g
+export const AMOUNT_TOKEN_RE = new RegExp(String.raw`-?₹\s?${INDIAN_NUMBER_SOURCE}(?:\.\d+)?`, 'g')
 
 /** Parses amount strings like "1,234.50", "₹1,234.50", "(1,234.50)" (accounting
  *  negative), "1234.50 CR" into a plain number. Returns null if nothing numeric found. */

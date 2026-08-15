@@ -95,51 +95,28 @@ export async function editTransaction(input: EditTransactionInput): Promise<Tran
 }
 
 /** Reconstructs what the selected accounts' (or, if accountIds is empty, every
- *  account's combined) balance was at the end of a given date, by taking the
- *  current authoritative balance and undoing every transaction that happened
- *  strictly after that date. This avoids assuming a zero starting balance or
- *  needing a separate balance-history table. */
+ *  account's combined) balance was at the end of a given date.
+ *
+ *  This delegates to the get_balance_as_of() Postgres function (migration
+ *  0019) so the sum happens in SQL — the previous client-side implementation
+ *  fetched every transaction up to the date into the browser, but Supabase's
+ *  JS client caps a single select at 1000 rows, so once a user had more than
+ *  1000 transactions before the as-of date the query silently truncated and
+ *  the reconstructed balance was wildly wrong (e.g. -₹83L).
+ *
+ *  It also deliberately starts from opening_balance and applies transactions
+ *  forward, rather than working backwards from current_balance — because
+ *  credit-card accounts have their current_balance reset to 0 by
+ *  set_card_statement_paid() (migration 0010) when a statement is marked paid,
+ *  while the underlying transactions remain in the ledger. The ledger is the
+ *  source of truth. */
 export async function fetchBalanceAsOf(accountIds: string[], asOfDate: string): Promise<number> {
-  let accountsQuery = supabase.from('accounts').select('id, current_balance')
-  if (accountIds.length > 0) accountsQuery = accountsQuery.in('id', accountIds)
-  const { data: accounts, error: accountsError } = await accountsQuery
-  if (accountsError) throw accountsError
-  if (!accounts || accounts.length === 0) return 0
-
-  const currentTotal = accounts.reduce((sum, a) => sum + Number(a.current_balance), 0)
-
-  let txnQuery = supabase
-    .from('transactions')
-    .select('type, amount, account_id, transfer_account_id')
-    .gt('occurred_at', `${asOfDate}T23:59:59.999`)
-
-  if (accountIds.length > 0) {
-    const ids = accountIds.join(',')
-    txnQuery = txnQuery.or(`account_id.in.(${ids}),transfer_account_id.in.(${ids})`)
-  }
-
-  const { data: laterTxns, error: txnError } = await txnQuery
-  if (txnError) throw txnError
-
-  const selectedSet = new Set(accountIds)
-
-  let deltaSinceThen = 0
-  for (const t of laterTxns ?? []) {
-    const amount = Number(t.amount)
-    if (t.type === 'income') {
-      deltaSinceThen += amount
-    } else if (t.type === 'expense') {
-      deltaSinceThen -= amount
-    } else if (t.type === 'transfer') {
-      // Across the whole portfolio a transfer nets to zero, but for a single
-      // account it's a debit on one side and a credit on the other.
-      if (accountIds.length === 0) continue
-      if (selectedSet.has(t.account_id)) deltaSinceThen -= amount
-      if (selectedSet.has(t.transfer_account_id)) deltaSinceThen += amount
-    }
-  }
-
-  return currentTotal - deltaSinceThen
+  const { data, error } = await supabase.rpc('get_balance_as_of', {
+    p_account_ids: accountIds.length > 0 ? accountIds : null,
+    p_as_of_date: asOfDate,
+  })
+  if (error) throw error
+  return Number(data ?? 0)
 }
 
 export async function deleteTransaction(id: string): Promise<void> {

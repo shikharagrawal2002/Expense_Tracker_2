@@ -1,4 +1,12 @@
-import { parseAmount, parseStatementDate, detectDirectionFromText, suggestCategory, extractLeadingDate, AMOUNT_TOKEN_RE } from './parse-helpers.ts'
+import {
+  parseAmount,
+  parseStatementDate,
+  detectDirectionFromText,
+  suggestCategory,
+  findAllDateOccurrences,
+  AMOUNT_TOKEN_RE,
+  INDIAN_DECIMAL_SOURCE,
+} from './parse-helpers.ts'
 
 // Inlined rather than imported from ./types.ts — see the note in dedupe.ts
 // for why: that file is type-only and some deploy pipelines drop it.
@@ -230,29 +238,7 @@ function finalizeBlock(dateIso: string, text: string): ParsedTransaction | null 
  *  "51.00", "1,64,246.04" — the format IDFC's statement uses, distinguished
  *  from a bare reference number by requiring a decimal point + exactly 2
  *  digits (reference numbers here are plain integers with no decimal). */
-const PLAIN_DECIMAL_RE = /\d[\d,]*\.\d{2}/g
-
-/** True for a line that's either the transaction table's own column-header
- *  row, or an opening/closing-balance summary row — both of which tend to
- *  repeat on every page of a multi-page statement and would otherwise leak
- *  their numbers into whichever transaction block happens to be open when
- *  the next page's header text appears. */
-function looksLikeHeaderOrSummaryNoise(line: string): boolean {
-  const l = line.toLowerCase()
-  if (l.includes('opening balance') && l.includes('closing balance')) return true
-  return (
-    l.includes('date') &&
-    (l.includes('amount') || l.includes('balance')) &&
-    (l.includes('detail') || l.includes('particular') || l.includes('narration') || l.includes('description'))
-  )
-}
-
-function findTableHeaderIndex(lines: string[]): number {
-  for (let i = 0; i < lines.length; i++) {
-    if (looksLikeHeaderOrSummaryNoise(lines[i])) return i
-  }
-  return -1
-}
+const PLAIN_DECIMAL_RE = new RegExp(INDIAN_DECIMAL_SOURCE, 'g')
 
 /** Finds the statement's own printed opening balance (e.g. "Opening Balance
  *  53,110.72"), used to seed the running balance for statements — like
@@ -341,33 +327,33 @@ interface SuffixDirectionConfig {
 
 const SUFFIX_DIRECTION_CONFIGS: Partial<Record<BankProvider, SuffixDirectionConfig>> = {
   icici: {
-    regex: /(-?[\d,]+\.\d{2})\s*(CR)?/,
+    regex: new RegExp(`(-?${INDIAN_DECIMAL_SOURCE})\\s*(CR)?`),
     amountGroup: 1,
     getDirection: (m) => (m[2] ? 'credit' : 'debit'),
   },
   hdfc: {
-    regex: /(\+)?\s*C\s?([\d,]+\.\d{2})/,
+    regex: new RegExp(`(\\+)?\\s*C\\s?(${INDIAN_DECIMAL_SOURCE})`),
     amountGroup: 2,
     getDirection: (m) => (m[1] === '+' ? 'credit' : 'debit'),
   },
   sbi: {
-    regex: /([\d,]+\.\d{2})\s*([CD])\b/,
+    regex: new RegExp(`(${INDIAN_DECIMAL_SOURCE})\\s*([CD])\\b`),
     amountGroup: 1,
     getDirection: (m) => (m[2] === 'C' ? 'credit' : 'debit'),
     multiMatch: true,
   },
   yesbank: {
-    regex: /([\d,]+\.\d{2})\s*(Dr|DR|Cr|CR)\b/,
+    regex: new RegExp(`(${INDIAN_DECIMAL_SOURCE})\\s*(Dr|DR|Cr|CR)\\b`),
     amountGroup: 1,
     getDirection: (m) => (m[2].toLowerCase() === 'cr' ? 'credit' : 'debit'),
   },
   indusind: {
-    regex: /([\d,]+\.\d{2})\s*(Dr|DR|Cr|CR)\b/,
+    regex: new RegExp(`(${INDIAN_DECIMAL_SOURCE})\\s*(Dr|DR|Cr|CR)\\b`),
     amountGroup: 1,
     getDirection: (m) => (m[2].toLowerCase() === 'cr' ? 'credit' : 'debit'),
   },
   axis: {
-    regex: /([\d,]+\.\d{2})\s*(Dr|DR|Cr|CR)\b/,
+    regex: new RegExp(`(${INDIAN_DECIMAL_SOURCE})\\s*(Dr|DR|Cr|CR)\\b`),
     amountGroup: 1,
     getDirection: (m) => (m[2].toLowerCase() === 'cr' ? 'credit' : 'debit'),
   },
@@ -414,59 +400,81 @@ function finalizeBlockBySuffixDirection(
   return rows
 }
 
-/** Groups PDF text lines into per-transaction blocks (a new block starts
- *  whenever a line begins with a recognizable date) and extracts one
- *  transaction per block. This handles both plain single-line statements and
- *  ones where a long description wraps across two or three lines — common in
- *  table-style PDF statements where the date/description/ref-no/amount/balance
- *  columns don't all land on the same extracted text line. Recurring page
- *  header/summary lines are flushed as hard block boundaries wherever they
- *  appear, not just at the very start, since multi-page statements often
- *  repeat them on every page. */
+/** Matches either an "Opening Balance ... Closing Balance ... [numbers]"
+ *  summary row, or the transaction table's own "Date ... Particulars/Details
+ *  ... Balance" column-header row — both of which tend to repeat on every
+ *  page of a multi-page statement and would otherwise leak their numbers, or
+ *  sit between two real transactions, confusing the block that follows. Uses
+ *  precise regex boundaries (not a fixed word-count window) so it removes
+ *  exactly the noise phrase without eating into an adjacent real date. */
+function buildHeaderOrSummaryNoiseRegex(): RegExp {
+  return new RegExp(
+    `(?:opening balance[\\s\\S]{0,60}?closing balance\\s*(?:${INDIAN_DECIMAL_SOURCE}\\s*){1,6})` +
+      `|(?:\\bdate\\b[\\s\\S]{0,40}?(?:particulars?|details?|narration|description)[\\s\\S]{0,60}?(?:balance|amount)\\b)`,
+    'gi',
+  )
+}
+
+/** Removes header/summary noise from a PDF's full extracted text in two
+ *  passes: first, everything before the transaction table's own header row is
+ *  discarded outright — an early "Payment Summary" or account-info box can
+ *  contain its own due-dates and balance figures that don't themselves match
+ *  the noise pattern (no "particulars"/"balance" wording), so truncating up
+ *  to the real header sidesteps that entirely. Second, any further recurring
+ *  occurrences of the same header/summary pattern later in the text (common
+ *  on multi-page statements, once per page) are stripped out too. */
+function preprocessPdfText(fullText: string): string {
+  const firstMatch = buildHeaderOrSummaryNoiseRegex().exec(fullText)
+  const afterPreamble = firstMatch ? fullText.slice(firstMatch.index + firstMatch[0].length) : fullText
+  return afterPreamble.replace(buildHeaderOrSummaryNoiseRegex(), ' ')
+}
+
+/** How far past a date's own position we'll look for that transaction's
+ *  amount/balance. Real transaction data always appears shortly after its own
+ *  date; anything found only much further away is virtually always an
+ *  unrelated figure that happened to sit between this date and the next one
+ *  in the extracted text (a repeated page header, a promotional paragraph, a
+ *  sidebar summary value) — this is what actually stops those from being
+ *  misread as that date's transaction. */
+const BLOCK_TEXT_MAX_LENGTH = 400
+
+/** Groups a PDF's full extracted text into per-transaction blocks by finding
+ *  every date-shaped occurrence and treating the text between one date and
+ *  the next as that date's transaction. This does NOT assume dates sit at the
+ *  start of their own line — unpdf's real output frequently comes back as one
+ *  continuous line (or just a handful of very long ones) with no reliable
+ *  line breaks between table rows at all, so line-based splitting alone can't
+ *  be trusted to separate transactions. Non-transaction dates (a statement
+ *  period, a due date sitting in a sidebar) naturally produce blocks with no
+ *  amount found within BLOCK_TEXT_MAX_LENGTH of them, and are silently
+ *  skipped by each finalizer below rather than needing to be pre-filtered. */
 function parseTextLines(lines: string[], warnings: string[], provider?: BankProvider): ParsedTransaction[] {
-  const headerIdx = findTableHeaderIndex(lines)
-  const startFrom = headerIdx === -1 ? 0 : headerIdx + 1
+  const fullText = preprocessPdfText(lines.join(' '))
+  const dateOccurrences = findAllDateOccurrences(fullText)
   const useBalanceDelta = provider === 'idfc'
   const suffixConfig = provider ? SUFFIX_DIRECTION_CONFIGS[provider] : undefined
 
   const out: ParsedTransaction[] = []
-  let current: { date: string; text: string } | null = null
   let runningBalance = useBalanceDelta ? findOpeningBalance(lines) : null
 
-  function flush() {
-    if (!current) return
+  for (let i = 0; i < dateOccurrences.length; i++) {
+    const occurrence = dateOccurrences[i]
+    const blockStart = occurrence.index + occurrence.matchLength
+    const blockEnd = i + 1 < dateOccurrences.length ? dateOccurrences[i + 1].index : fullText.length
+    const blockText = fullText.slice(blockStart, blockEnd).trim().slice(0, BLOCK_TEXT_MAX_LENGTH)
+    if (!blockText) continue
+
     if (suffixConfig) {
-      out.push(...finalizeBlockBySuffixDirection(current.date, current.text, suffixConfig))
+      out.push(...finalizeBlockBySuffixDirection(occurrence.date, blockText, suffixConfig))
     } else if (useBalanceDelta) {
-      const { row, nextBalance } = finalizeBlockByBalanceDelta(current.date, current.text, runningBalance)
+      const { row, nextBalance } = finalizeBlockByBalanceDelta(occurrence.date, blockText, runningBalance)
       if (row) out.push(row)
       runningBalance = nextBalance
     } else {
-      const row = finalizeBlock(current.date, current.text)
+      const row = finalizeBlock(occurrence.date, blockText)
       if (row) out.push(row)
     }
-    current = null
   }
-
-  for (let i = startFrom; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (!line) continue
-
-    if (looksLikeHeaderOrSummaryNoise(line)) {
-      flush() // don't let a repeated header/summary row's numbers leak into the open block
-      continue
-    }
-
-    const lead = extractLeadingDate(line)
-    if (lead) {
-      flush()
-      current = { date: lead.date, text: lead.rest }
-    } else if (current) {
-      current.text += ` ${line}`
-    }
-    // else: noise before the first transaction (e.g. account header details) — skip
-  }
-  flush()
 
   if (out.length === 0) {
     warnings.push(
