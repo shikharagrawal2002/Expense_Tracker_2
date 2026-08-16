@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Landmark, CreditCard, AlertTriangle, Check, Trash2, KeyRound, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -49,7 +50,11 @@ const TABS: Array<{ key: ImportKind; label: string; icon: typeof Landmark; hint:
 ]
 
 export function ImportsPage() {
-  const [kind, setKind] = useState<ImportKind>('bank')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [kind, setKind] = useState<ImportKind>(() => {
+    const urlKind = searchParams.get('kind')
+    return urlKind === 'card' ? 'card' : 'bank'
+  })
   const [accountId, setAccountId] = useState('')
   const [provider, setProvider] = useState<BankProvider>('hsbc')
   const [file, setFile] = useState<File | null>(null)
@@ -87,6 +92,8 @@ export function ImportsPage() {
 
   function handleTabChange(nextKind: ImportKind) {
     setKind(nextKind)
+    // Keep the URL in sync so mobile shortcuts can deep-link to a specific tab.
+    setSearchParams(nextKind === 'card' ? { kind: 'card' } : {}, { replace: true })
     setAccountId('')
     setProvider('hsbc')
     setFile(null)
