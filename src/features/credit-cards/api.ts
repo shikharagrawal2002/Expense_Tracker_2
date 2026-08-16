@@ -74,5 +74,17 @@ export async function setCardStatementPaid(id: string, isPaid: boolean): Promise
     p_is_paid: isPaid,
   })
   if (error) throw error
-  // No return value needed, the mutation handles cache invalidation
+  // Recompute balances from the ledger — set_card_statement_paid() resets the
+  // card's current_balance to 0, but the ledger is the source of truth.
+  await recalculateBalances()
+}
+
+/** Recomputes every account's current_balance from the transaction ledger.
+ *  Idempotent — safe to call after any operation that may have caused the
+ *  incremental balance-sync triggers to drift. */
+export async function recalculateBalances(accountIds?: string[]): Promise<void> {
+  const { error } = await supabase.rpc('recalculate_balances', {
+    p_account_ids: accountIds && accountIds.length > 0 ? accountIds : null,
+  })
+  if (error) throw error
 }

@@ -31,6 +31,7 @@
     "react-hook-form": "^7.80.0",
     "react-router-dom": "^7.18.1",
     "recharts": "^3.9.1",
+    "supabase": "^2.114.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },

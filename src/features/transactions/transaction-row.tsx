@@ -52,7 +52,7 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
   const isDestinationView = txn.type === 'transfer' && viewAccountId && txn.transfer_account_id === viewAccountId
 
   return (
-    <div className="group flex items-center gap-3 rounded-lg px-2 py-2.5 -mx-2 hover:surface-2 transition-colors">
+    <div className="group flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg px-2 py-2.5 -mx-2 hover:surface-2 transition-colors">
       <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center" style={{ backgroundColor: `${color}26` }}>
         {txn.type === 'transfer' ? (
           <ArrowLeftRight className="h-3.5 w-3.5" style={{ color }} />
@@ -62,20 +62,20 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{txn.category?.name ?? (txn.type === 'transfer' ? 'Transfer' : 'Uncategorized')}</p>
-        <p className="text-xs text-muted truncate hidden sm:block">
+        <p className="min-w-0 overflow-clip text-ellipsis whitespace-nowrap text-xs text-muted hidden sm:block max-w-[60%]">
           {txn.type === 'transfer' && isSourceView ? (
-            <span className="truncate">To {txn.transfer_account?.name ?? 'Unknown'} · {subtitleDate}</span>
+            <span className="whitespace-normal">To {txn.transfer_account?.name ?? 'Unknown'} · {subtitleDate}</span>
           ) : txn.type === 'transfer' && isDestinationView ? (
-            <span className="truncate">From {txn.account?.name ?? 'Unknown'} · {subtitleDate}</span>
+            <span className="whitespace-normal">From {txn.account?.name ?? 'Unknown'} · {subtitleDate}</span>
           ) : txn.type === 'transfer' ? (
             <>
-              <span className="truncate">{txn.account?.name ?? 'Unknown'}</span>
+              <span className="whitespace-normal">{txn.account?.name ?? 'Unknown'}</span>
               <ArrowRight className="h-3 w-3 shrink-0" />
-              <span className="truncate">{txn.transfer_account?.name ?? 'Unknown'}</span>
+              <span className="whitespace-normal">{txn.transfer_account?.name ?? 'Unknown'}</span>
               <span>· {subtitleDate}</span>
             </>
           ) : (
-            <span className="truncate">
+            <span className="whitespace-nowrap">
               {txn.account?.name} · {subtitleDate}
               {txn.notes ? ` · ${txn.notes}` : ''}
             </span>
@@ -91,7 +91,7 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
           {txn.split_status === 'open' ? 'Open' : 'Closed'}
         </Badge>
       )}
-      <p className={cn('text-sm font-medium num shrink-0', amountColorClass)}>
+      <p className={cn('max-w-[42%] truncate text-right text-sm font-medium num shrink-0', amountColorClass)}>
         {signedAmount > 0 ? '+' : ''}
         {formatCurrency(signedAmount, txn.currency)}
       </p>

@@ -1,11 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchAccounts, createAccount, updateAccount, archiveAccount } from '@/features/accounts/api'
+import { recalculateBalances } from '@/features/imports/api'
 import type { Account, NewAccount } from '@/lib/supabase/types'
 
 const ACCOUNTS_KEY = ['accounts'] as const
 
 export function useAccounts() {
   return useQuery({ queryKey: ACCOUNTS_KEY, queryFn: fetchAccounts })
+}
+
+/** Recomputes every account's current_balance from the transaction ledger.
+ *  Use this to fix any drift between the stored balance and the ledger. */
+export function useRecalculateBalances() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => recalculateBalances(),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ACCOUNTS_KEY }),
+  })
 }
 
 export function useCreateAccount() {

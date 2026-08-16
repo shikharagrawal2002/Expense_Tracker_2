@@ -50,7 +50,19 @@ export async function confirmSmsTransaction(
   // Extract transaction_id from the JSON response
   const result = data as { transaction_id: string }
   console.log('Parsed result:', result)
+  // Recompute the account's balance from the ledger after the SMS-created transaction.
+  await recalculateBalances([accountId])
   return result.transaction_id
+}
+
+/** Recomputes the given accounts' current_balance from the transaction ledger.
+ *  Idempotent — safe to call after any operation that may have caused the
+ *  incremental balance-sync triggers to drift. */
+export async function recalculateBalances(accountIds?: string[]): Promise<void> {
+  const { error } = await supabase.rpc('recalculate_balances', {
+    p_account_ids: accountIds && accountIds.length > 0 ? accountIds : null,
+  })
+  if (error) throw error
 }
 
 export async function skipSmsTransaction(smsId: string): Promise<void> {

@@ -65,7 +65,7 @@ export function TransactionsPage() {
   const hasActiveFilters = Boolean(search || accountIds.length > 0 || type || datePreset !== 'all')
 
   return (
-    <div className="max-w-[1100px] space-y-5">
+    <div className="min-w-0 max-w-[1100px] space-y-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">Your activity</p>
@@ -82,15 +82,15 @@ export function TransactionsPage() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid w-full max-w-full min-w-0 grid-cols-2 gap-3 lg:grid-cols-4 max-sm:max-w-full">
         <SummaryCard icon={WalletCards} label="Visible transactions" value={summary.count.toLocaleString()} />
         <SummaryCard icon={TrendingUp} label="Income" value={formatCurrency(summary.income)} tone="positive" />
         <SummaryCard icon={TrendingDown} label="Expenses" value={formatCurrency(summary.expenses)} tone="negative" />
         <SummaryCard icon={ArrowLeftRight} label="Net activity" value={formatCurrency(summary.net)} tone={summary.net >= 0 ? 'positive' : 'negative'} />
       </div>
 
-      <section className="space-y-3" aria-label="Transaction filters">
-        <div className="flex gap-2">
+      <section className="min-w-0 max-w-full space-y-3" aria-label="Transaction filters">
+        <div className="flex min-w-0 max-w-full flex-wrap gap-2">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
             <Input
@@ -106,7 +106,7 @@ export function TransactionsPage() {
             Filters{hasActiveFilters ? ' ·' : ''}
           </Button>
         </div>
-        <div className={`${filtersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-2 sm:flex sm:flex-wrap`}>
+        <div className={`${filtersOpen ? 'grid' : 'hidden'} min-w-0 max-w-full grid-cols-1 gap-2 sm:flex sm:flex-wrap`}>
           <Select value={type} onChange={(e) => setType(e.target.value as typeof type)} className="sm:w-40">
             <option value="">All types</option>
             <option value="income">Income</option>
@@ -151,8 +151,9 @@ export function TransactionsPage() {
       </section>
 
       {(datePreset === 'this-month' || datePreset === 'cycle') && (
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
           <button
+            type="button"
             onClick={() => setCycleReference((d) => shiftMonth(d, -1))}
             className="rounded-lg p-1.5 hover:surface-2 text-muted"
             aria-label="Previous month"
@@ -163,6 +164,7 @@ export function TransactionsPage() {
             {datePreset === 'cycle' ? statementCycle.label : calendarMonth.label}
           </span>
           <button
+            type="button"
             onClick={() => setCycleReference((d) => shiftMonth(d, 1))}
             className="rounded-lg p-1.5 hover:surface-2 text-muted"
             aria-label="Next month"
@@ -170,7 +172,7 @@ export function TransactionsPage() {
             <ChevronRight className="h-4 w-4" />
           </button>
           {(datePreset === 'cycle' || datePreset === 'this-month') && previousMonthBalance !== undefined && (
-            <span className="ml-2 text-muted">
+            <span className="ml-0 text-muted sm:ml-2">
               Previous month final balance:{' '}
               <span className="font-medium text-inherit">{formatCurrency(previousMonthBalance)}</span>
             </span>
@@ -186,11 +188,10 @@ export function TransactionsPage() {
         </div>
       )}
 
-      <Card>
-        <CardContent className="pt-4">
+      <Card className="overflow-hidden">
+        <CardContent className="w-full min-w-0 max-w-full pt-4">
           {!isLoading && !isError && transactions && transactions.length > 0 && (
             <div className="mb-3 flex items-center justify-between border-b border-[var(--color-border-light)] pb-3 text-xs text-muted dark:border-[var(--color-border-dark)]">
-              <span>{summary.count.toLocaleString()} matching {summary.count === 1 ? 'transaction' : 'transactions'}</span>
               <span className="hidden sm:inline">Hover a row for quick actions</span>
             </div>
           )}
@@ -211,19 +212,21 @@ export function TransactionsPage() {
           )}
 
           {!isLoading && !isError && transactions?.length === 0 && (
-            <EmptyState
-              icon={ArrowLeftRight}
-              title="No transactions found"
-              description={
-                search || accountIds.length > 0 || type || datePreset !== 'all'
-                  ? 'Try adjusting your filters.'
-                  : 'Add your first transaction to start building your history.'
-              }
-            />
+            <div className="w-full">
+              <EmptyState
+                icon={ArrowLeftRight}
+                title="No transactions found"
+                description={
+                  search || accountIds.length > 0 || type || datePreset !== 'all'
+                    ? 'Try adjusting your filters.'
+                    : 'Add your first transaction to start building your history.'
+                }
+              />
+            </div>
           )}
 
           {!isLoading && transactions && transactions.length > 0 && (
-            <div className="divide-y divide-[var(--color-border-light)] dark:divide-[var(--color-border-dark)]">
+            <div className="w-full divide-y divide-[var(--color-border-light)] dark:divide-[var(--color-border-dark)]">
               {transactions.flatMap((txn) => {
                 // A transfer has no single sign that's correct for both sides
                 // at once. When viewing "All accounts" (no filter) or when both
@@ -285,7 +288,7 @@ function SummaryCard({
       : 'text-inherit'
 
   return (
-    <Card className="p-4 sm:p-5">
+    <Card className="min-w-0 max-w-full p-4 sm:p-5">
       <div className="mb-3 flex items-center gap-2 text-muted">
         <Icon className="h-4 w-4" />
         <span className="truncate text-xs font-medium">{label}</span>

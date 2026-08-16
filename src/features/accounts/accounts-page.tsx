@@ -1,14 +1,15 @@
-import { Plus, Wallet } from 'lucide-react'
+import { Plus, RefreshCw, Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
-import { useAccounts } from '@/features/accounts/hooks'
+import { useAccounts, useRecalculateBalances } from '@/features/accounts/hooks'
 import { AccountCard } from '@/features/accounts/account-card'
 import { AccountFormDialog } from '@/features/accounts/account-form-dialog'
 import { formatCurrency } from '@/lib/utils'
 
 export function AccountsPage() {
   const { data: accounts, isLoading, isError } = useAccounts()
+  const recalculate = useRecalculateBalances()
 
   const netWorth = accounts?.reduce((sum, a) => sum + a.current_balance, 0) ?? 0
 
@@ -23,14 +24,25 @@ export function AccountsPage() {
             </p>
           )}
         </div>
-        <AccountFormDialog
-          trigger={
-            <Button size="sm">
-              <Plus className="h-4 w-4" />
-              Add account
-            </Button>
-          }
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => recalculate.mutate()}
+            disabled={recalculate.isPending}
+          >
+            <RefreshCw className={`h-4 w-4 ${recalculate.isPending ? 'animate-spin' : ''}`} />
+            Recalculate balances
+          </Button>
+          <AccountFormDialog
+            trigger={
+              <Button size="sm">
+                <Plus className="h-4 w-4" />
+                Add account
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {isLoading && (

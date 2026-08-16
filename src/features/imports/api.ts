@@ -82,7 +82,18 @@ export async function fetchImportBatches(): Promise<ImportBatch[]> {
 export async function undoImportBatch(id: string): Promise<void> {
   const { error } = await supabase.rpc('undo_import_batch', { p_batch_id: id })
   if (error) throw error
-  // No return value needed, just check for errors
+  // Recompute balances from the ledger after the batch's transactions are removed.
+  await recalculateBalances()
+}
+
+/** Recomputes every account's current_balance from the transaction ledger.
+ *  Idempotent — safe to call after any bulk operation that may have caused
+ *  the incremental balance-sync triggers to drift. */
+export async function recalculateBalances(accountIds?: string[]): Promise<void> {
+  const { error } = await supabase.rpc('recalculate_balances', {
+    p_account_ids: accountIds && accountIds.length > 0 ? accountIds : null,
+  })
+  if (error) throw error
 }
 
 /** Bulk-inserts confirmed transactions from a review table. Supabase's insert
@@ -99,6 +110,8 @@ export async function bulkInsertTransactions(rows: NewTransaction[]): Promise<nu
       count: 'exact',
     })
   if (error) throw error
+  // Recompute balances from the ledger after the bulk insert.
+  await recalculateBalances()
   return count ?? rows.length
 }
 
