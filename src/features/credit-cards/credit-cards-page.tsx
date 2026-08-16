@@ -353,14 +353,14 @@ export function CreditCardsPage() {
             </div>
             {selectedStatement && (
               <>
-                <div className="hidden flex-wrap items-center gap-3 text-sm sm:flex">
+                <div className="hidden flex-wrap items-center justify-start gap-3 text-sm sm:flex">
                   <span className="text-muted">
                     Cycle:{' '}
                     <span className="font-medium text-inherit">
                       {formatCycleRange(selectedStatement)}
                     </span>
                   </span>
-                  <span className="text-muted">
+                  <span className="ml-auto flex flex-wrap items-stretch justify-center text-muted">
                     Amount due:{' '}
                     <span className="font-medium text-inherit">
                       {formatCurrency(selectedStatement.statement_amount)}

@@ -27,5 +27,5 @@ export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingEle
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('px-5 pb-5 pt-3', className)} {...props} />
+  return <div className={cn('flex flex-col items-start justify-start px-5 pb-5 pt-3', className)} {...props} />
 }
