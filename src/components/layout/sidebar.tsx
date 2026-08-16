@@ -68,14 +68,17 @@ const NAV_SECTIONS = [
 
 export function Sidebar() {
   return (
-    <aside className="hidden lg:flex lg:w-60 lg:flex-col border-r border-hairline surface shrink-0">
-      <div className="flex items-center gap-2 px-5 h-14 border-b border-hairline">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-brand-500)]">
+    <aside className="hidden lg:flex lg:w-64 lg:flex-col border-r border-hairline surface shrink-0">
+      <div className="flex items-center gap-3 px-5 h-16 border-b border-hairline">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--color-brand-600)] shadow-sm shadow-[var(--color-brand-600)]/25">
           <Sparkles className="h-4 w-4 text-white" />
         </div>
-        <span className="font-display font-semibold text-[15px]">Ledger</span>
+        <div>
+          <span className="font-display font-semibold text-[15px] tracking-tight">Ledger</span>
+          <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-muted">Personal finance</p>
+        </div>
       </div>
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+      <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-7">
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             <p className="px-2 mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted">
@@ -88,9 +91,9 @@ export function Sidebar() {
                   to={item.to}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all',
                       isActive
-                        ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] dark:bg-[var(--color-brand-500)]/15 dark:text-[var(--color-brand-300)]'
+                        ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] shadow-sm dark:bg-[var(--color-brand-500)]/15 dark:text-[var(--color-brand-300)]'
                         : 'text-muted hover:surface-2 hover:text-inherit',
                     )
                   }

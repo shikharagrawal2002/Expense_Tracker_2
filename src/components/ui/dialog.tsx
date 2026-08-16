@@ -22,7 +22,7 @@ export function DialogContent({
       <RadixDialog.Content
         className={cn(
           'fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2',
-          'surface border border-hairline rounded-2xl shadow-xl p-6',
+          'surface border border-hairline rounded-xl shadow-2xl shadow-slate-950/15 p-6 dark:shadow-black/40',
           'data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95',
           'max-h-[90vh] overflow-y-auto',

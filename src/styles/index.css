@@ -17,36 +17,36 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* Brand / accent */
-  --color-brand-50: #eef1ff;
-  --color-brand-100: #e0e4ff;
-  --color-brand-300: #a6b0fb;
-  --color-brand-500: #5b6ef5;
-  --color-brand-600: #4453e0;
-  --color-brand-700: #3540b8;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-300: #93c5fd;
+  --color-brand-500: #2563eb;
+  --color-brand-600: #1d4ed8;
+  --color-brand-700: #1e40af;
 
   /* Semantic */
-  --color-positive-500: #34d399;
-  --color-positive-600: #10b981;
+  --color-positive-500: #4ade80;
+  --color-positive-600: #16a34a;
   --color-negative-500: #fb7185;
-  --color-negative-600: #e11d48;
-  --color-warning-500: #fbbf24;
-  --color-invest-500: #38bdf8;
+  --color-negative-600: #dc5b63;
+  --color-warning-500: #f59e0b;
+  --color-invest-500: #0891b2;
 
   /* Light surface scale */
   --color-surface-light: #ffffff;
-  --color-bg-light: #f7f8fa;
-  --color-surface-2-light: #f1f2f5;
-  --color-border-light: #e4e6eb;
-  --color-text-light: #12141c;
-  --color-text-muted-light: #6b7080;
+  --color-bg-light: #f5f7fb;
+  --color-surface-2-light: #eef2f7;
+  --color-border-light: #dfe5ed;
+  --color-text-light: #172033;
+  --color-text-muted-light: #657087;
 
   /* Dark surface scale */
-  --color-surface-dark: #12141c;
-  --color-bg-dark: #0a0b10;
-  --color-surface-2-dark: #1a1d27;
-  --color-border-dark: #23262f;
-  --color-text-dark: #f4f5f7;
-  --color-text-muted-dark: #8b8fa3;
+  --color-surface-dark: #101828;
+  --color-bg-dark: #0b1220;
+  --color-surface-2-dark: #162033;
+  --color-border-dark: #26344a;
+  --color-text-dark: #f4f7fb;
+  --color-text-muted-dark: #92a0b8;
 }
 
 @layer base {
@@ -60,7 +60,7 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
   ::selection {
-    background-color: var(--color-brand-300);
+    background-color: var(--color-brand-100);
     color: var(--color-brand-700);
   }
   /* Tabular figures everywhere money appears */
