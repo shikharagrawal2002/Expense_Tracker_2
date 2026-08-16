@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, ArrowLeftRight, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, ArrowLeftRight, Search, ChevronLeft, ChevronRight, SlidersHorizontal, X, TrendingDown, TrendingUp, WalletCards } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { MultiSelect } from '@/components/ui/multi-select'
@@ -23,6 +23,7 @@ export function TransactionsPage() {
   const [cycleReference, setCycleReference] = useState(() => new Date())
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const { data: accounts } = useAccounts()
 
@@ -55,13 +56,25 @@ export function TransactionsPage() {
     (datePreset === 'cycle' || datePreset === 'this-month') ? statementCycle.start : undefined,
   )
 
+  const summary = useMemo(() => {
+    const income = transactions?.reduce((total, txn) => total + (txn.type === 'income' ? txn.amount : 0), 0) ?? 0
+    const expenses = transactions?.reduce((total, txn) => total + (txn.type === 'expense' ? txn.amount : 0), 0) ?? 0
+    return { income, expenses, net: income - expenses, count: transactions?.length ?? 0 }
+  }, [transactions])
+
+  const hasActiveFilters = Boolean(search || accountIds.length > 0 || type || datePreset !== 'all')
+
   return (
-    <div className="max-w-[1000px] space-y-5">
-      <div className="flex items-start justify-between">
-        <h1 className="font-display text-2xl font-semibold">Transactions</h1>
+    <div className="max-w-[1100px] space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted">Your activity</p>
+          <h1 className="font-display text-2xl font-semibold">Transactions</h1>
+          <p className="mt-1 text-sm text-muted">Review and manage your money in one place.</p>
+        </div>
         <TransactionFormDialog
           trigger={
-            <Button size="sm">
+            <Button size="sm" className="hidden sm:inline-flex">
               <Plus className="h-4 w-4" />
               Add transaction
             </Button>
@@ -69,40 +82,73 @@ export function TransactionsPage() {
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes…"
-            className="w-full h-10 rounded-lg surface-2 border border-hairline pl-9 pr-3 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]"
-          />
-        </div>
-        <Select value={type} onChange={(e) => setType(e.target.value as typeof type)} className="sm:w-40">
-          <option value="">All types</option>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-          <option value="transfer">Transfer</option>
-        </Select>
-        <MultiSelect
-          options={accounts?.map((a) => ({ value: a.id, label: a.name })) ?? []}
-          selected={accountIds}
-          onChange={setAccountIds}
-          placeholder="All accounts"
-          className="sm:w-56"
-        />
-        <Select
-          value={datePreset}
-          onChange={(e) => setDatePreset(e.target.value as DateRangePreset)}
-          className="sm:w-44"
-        >
-          <option value="all">All time</option>
-          <option value="this-month">This month</option>
-          <option value="cycle">Monthly (statement cycle)</option>
-          <option value="custom">Custom range</option>
-        </Select>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <SummaryCard icon={WalletCards} label="Visible transactions" value={summary.count.toLocaleString()} />
+        <SummaryCard icon={TrendingUp} label="Income" value={formatCurrency(summary.income)} tone="positive" />
+        <SummaryCard icon={TrendingDown} label="Expenses" value={formatCurrency(summary.expenses)} tone="negative" />
+        <SummaryCard icon={ArrowLeftRight} label="Net activity" value={formatCurrency(summary.net)} tone={summary.net >= 0 ? 'positive' : 'negative'} />
       </div>
+
+      <section className="space-y-3" aria-label="Transaction filters">
+        <div className="flex gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search notes…"
+              className="pl-9"
+              aria-label="Search transactions"
+            />
+          </div>
+          <Button variant="outline" size="sm" className="sm:hidden" onClick={() => setFiltersOpen((open) => !open)}>
+            <SlidersHorizontal className="h-4 w-4" />
+            Filters{hasActiveFilters ? ' ·' : ''}
+          </Button>
+        </div>
+        <div className={`${filtersOpen ? 'grid' : 'hidden'} grid-cols-1 gap-2 sm:flex sm:flex-wrap`}>
+          <Select value={type} onChange={(e) => setType(e.target.value as typeof type)} className="sm:w-40">
+            <option value="">All types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+            <option value="transfer">Transfer</option>
+          </Select>
+          <MultiSelect
+            options={accounts?.map((a) => ({ value: a.id, label: a.name })) ?? []}
+            selected={accountIds}
+            onChange={setAccountIds}
+            placeholder="All accounts"
+            className="sm:w-56"
+          />
+          <Select
+            value={datePreset}
+            onChange={(e) => setDatePreset(e.target.value as DateRangePreset)}
+            className="sm:w-44"
+          >
+            <option value="all">All time</option>
+            <option value="this-month">This month</option>
+            <option value="cycle">Monthly (statement cycle)</option>
+            <option value="custom">Custom range</option>
+          </Select>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearch('')
+                setAccountIds([])
+                setType('')
+                setDatePreset('all')
+                setCustomFrom('')
+                setCustomTo('')
+              }}
+            >
+              <X className="h-4 w-4" />
+              Clear filters
+            </Button>
+          )}
+        </div>
+      </section>
 
       {(datePreset === 'this-month' || datePreset === 'cycle') && (
         <div className="flex items-center gap-2 text-sm">
@@ -142,6 +188,12 @@ export function TransactionsPage() {
 
       <Card>
         <CardContent className="pt-4">
+          {!isLoading && !isError && transactions && transactions.length > 0 && (
+            <div className="mb-3 flex items-center justify-between border-b border-[var(--color-border-light)] pb-3 text-xs text-muted dark:border-[var(--color-border-dark)]">
+              <span>{summary.count.toLocaleString()} matching {summary.count === 1 ? 'transaction' : 'transactions'}</span>
+              <span className="hidden sm:inline">Hover a row for quick actions</span>
+            </div>
+          )}
           {isLoading && (
             <div className="space-y-2">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -202,6 +254,43 @@ export function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      <TransactionFormDialog
+        trigger={
+          <Button size="lg" className="fixed bottom-20 right-4 z-10 rounded-full px-4 shadow-lg sm:hidden">
+            <Plus className="h-5 w-5" />
+            <span className="sr-only">Add transaction</span>
+          </Button>
+        }
+      />
     </div>
+  )
+}
+
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  tone = 'default',
+}: {
+  icon: typeof WalletCards
+  label: string
+  value: string
+  tone?: 'default' | 'positive' | 'negative'
+}) {
+  const toneClass = tone === 'positive'
+    ? 'text-[var(--color-positive-600)]'
+    : tone === 'negative'
+      ? 'text-[var(--color-negative-600)]'
+      : 'text-inherit'
+
+  return (
+    <Card className="p-4 sm:p-5">
+      <div className="mb-3 flex items-center gap-2 text-muted">
+        <Icon className="h-4 w-4" />
+        <span className="truncate text-xs font-medium">{label}</span>
+      </div>
+      <p className={`num text-lg font-semibold ${toneClass}`}>{value}</p>
+    </Card>
   )
 }

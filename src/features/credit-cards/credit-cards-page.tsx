@@ -90,7 +90,7 @@ export function CreditCardsPage() {
       </div>
 
       {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 2 }).map((_, i) => (
             <Skeleton key={i} className="h-36" />
           ))}
@@ -106,7 +106,7 @@ export function CreditCardsPage() {
       )}
 
       {!isLoading && summaries && summaries.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {summaries.map(({ account, latestStatement, pendingBalance, effectiveUtilizationPct }) => {
             const isSelected = account.id === selectedCardId
             const isHighUtilization = (effectiveUtilizationPct ?? 0) > 30
@@ -124,11 +124,11 @@ export function CreditCardsPage() {
                     setSelectedCardId(account.id)
                   }
                 }}
-                className="text-left cursor-pointer"
+                className="w-full text-left cursor-pointer"
               >
                 <Card className={cn('transition-colors', isSelected && 'ring-2 ring-[var(--color-brand-500)]')}>
                   <CardContent className="pt-4">
-                    <div className="flex items-center gap-4">
+                    <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4">
                       <ProgressRing
                         value={effectiveUtilizationPct ?? 0}
                         size={64}
@@ -144,23 +144,23 @@ export function CreditCardsPage() {
                         <p className="font-display text-lg font-semibold num">
                           {formatCurrency(pendingBalance, account.currency)}
                         </p>
-                        <p className="text-xs text-muted">
-                          pending across unpaid statements
+                        <p className="text-xs leading-relaxed text-muted">
+                          Pending across unpaid statements
                           {account.credit_limit ? ` of ${formatCurrency(account.credit_limit)} limit` : ''}
                         </p>
                       </div>
                     </div>
 
-                    <div className="mt-3 pt-3 border-t border-hairline flex items-center justify-between gap-2">
+                    <div className="mt-3 flex flex-col items-stretch gap-3 border-t border-hairline pt-3 sm:flex-row sm:items-center sm:justify-between">
                       {latestStatement ? (
-                        <p className="text-xs text-muted">
+                        <p className="min-w-0 text-xs leading-relaxed text-muted">
                           {formatCurrency(latestStatement.statement_amount)} due{' '}
                           {new Date(latestStatement.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                         </p>
                       ) : (
-                        <p className="text-xs text-muted">No statement imported yet</p>
+                        <p className="min-w-0 text-xs leading-relaxed text-muted">No statement imported yet</p>
                       )}
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5 sm:shrink-0">
                         {latestStatement?.is_paid && <Badge variant="positive">Paid</Badge>}
                         {dueSoon !== null && dueSoon <= 7 && (
                           <Badge variant={dueSoon < 0 ? 'negative' : 'warning'}>
@@ -171,6 +171,7 @@ export function CreditCardsPage() {
                         {latestStatement && (
                           <Button
                             size="sm"
+                            className="w-full sm:w-auto"
                             variant={latestStatement.is_paid ? 'secondary' : 'default'}
                             onClick={(e) => {
                               e.stopPropagation()
@@ -330,8 +331,8 @@ export function CreditCardsPage() {
 
       {selectedCardId && (
         <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardHeader className="flex-col items-stretch gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Transactions</CardTitle>
               {history && history.length > 0 && (
                 <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -352,14 +353,14 @@ export function CreditCardsPage() {
             </div>
             {selectedStatement && (
               <>
-                <div className="flex items-center gap-3 flex-wrap mt-1 text-sm hidden sm:flex">
+                <div className="hidden flex-wrap items-center justify-start gap-3 text-sm sm:flex">
                   <span className="text-muted">
                     Cycle:{' '}
                     <span className="font-medium text-inherit">
                       {formatCycleRange(selectedStatement)}
                     </span>
                   </span>
-                  <span className="text-muted">
+                  <span className="ml-auto flex flex-wrap items-stretch justify-center text-muted">
                     Amount due:{' '}
                     <span className="font-medium text-inherit">
                       {formatCurrency(selectedStatement.statement_amount)}
@@ -377,7 +378,7 @@ export function CreditCardsPage() {
                   </span>
                   {selectedStatement.is_paid && <Badge variant="positive">Paid</Badge>}
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-sm sm:hidden">
+                <div className="flex items-center gap-2 text-sm sm:hidden">
                   <span className="text-muted">
                     {formatCurrency(selectedStatement.statement_amount)}
                   </span>

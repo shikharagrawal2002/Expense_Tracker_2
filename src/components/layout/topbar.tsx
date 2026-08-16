@@ -20,15 +20,15 @@ export function Topbar() {
   const initial = (user?.user_metadata?.full_name?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
 
   return (
-    <header className="h-14 shrink-0 border-b border-hairline surface flex items-center gap-3 px-4 lg:px-6">
+    <header className="h-16 shrink-0 border-b border-hairline surface flex items-center gap-3 px-4 lg:px-8">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
         <input
           type="text"
           placeholder="Search transactions, merchants, categories…"
           className={cn(
-            'w-full h-9 rounded-lg surface-2 border border-hairline pl-9 pr-3 text-sm',
-            'placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]',
+            'w-full h-10 rounded-md surface-2 border border-hairline pl-9 pr-3 text-sm transition-shadow',
+            'placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]/25 focus:border-[var(--color-brand-500)]',
           )}
         />
       </div>
@@ -50,7 +50,7 @@ export function Topbar() {
         </Button>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button className="h-8 w-8 rounded-full bg-[var(--color-brand-500)] flex items-center justify-center text-white text-xs font-medium ml-1">
+            <button className="h-9 w-9 rounded-full bg-[var(--color-brand-600)] flex items-center justify-center text-white text-xs font-semibold ml-1 shadow-sm shadow-[var(--color-brand-600)]/25">
               {initial}
             </button>
           </DropdownMenu.Trigger>

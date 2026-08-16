@@ -19,10 +19,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setIsLoading(false)
-    })
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session)
+      })
+      .catch(() => {
+        setSession(null)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
@@ -32,17 +39,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signInWithPassword: AuthContextValue['signInWithPassword'] = async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error: error?.message ?? null }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      return { error: error?.message ?? null }
+    } catch {
+      return { error: 'Unable to connect to Supabase. Check the project configuration and try again.' }
+    }
   }
 
   const signUpWithPassword: AuthContextValue['signUpWithPassword'] = async (email, password, fullName) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    })
-    return { error: error?.message ?? null }
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } },
+      })
+      return { error: error?.message ?? null }
+    } catch {
+      return { error: 'Unable to connect to Supabase. Check the project configuration and try again.' }
+    }
   }
 
   const signInWithOAuth: AuthContextValue['signInWithOAuth'] = async (provider) => {

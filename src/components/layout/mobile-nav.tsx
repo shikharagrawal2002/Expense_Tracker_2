@@ -17,7 +17,7 @@ export function MobileNav() {
 
   return (
     <>
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 surface border-t border-hairline pb-[env(safe-area-inset-bottom)]">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 surface border-t border-hairline pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(15,23,42,0.06)] dark:shadow-black/20">
         <div className="flex items-stretch justify-between px-1">
           {ITEMS.map((item) => (
             <NavLink
