@@ -331,8 +331,8 @@ export function CreditCardsPage() {
 
       {selectedCardId && (
         <Card>
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <CardHeader className="flex-col items-stretch gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Transactions</CardTitle>
               {history && history.length > 0 && (
                 <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -353,7 +353,7 @@ export function CreditCardsPage() {
             </div>
             {selectedStatement && (
               <>
-                <div className="flex items-center gap-3 flex-wrap mt-1 text-sm hidden sm:flex">
+                <div className="hidden flex-wrap items-center gap-3 text-sm sm:flex">
                   <span className="text-muted">
                     Cycle:{' '}
                     <span className="font-medium text-inherit">
@@ -378,7 +378,7 @@ export function CreditCardsPage() {
                   </span>
                   {selectedStatement.is_paid && <Badge variant="positive">Paid</Badge>}
                 </div>
-                <div className="flex items-center gap-2 mt-1 text-sm sm:hidden">
+                <div className="flex items-center gap-2 text-sm sm:hidden">
                   <span className="text-muted">
                     {formatCurrency(selectedStatement.statement_amount)}
                   </span>
