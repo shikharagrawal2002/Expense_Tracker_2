@@ -3,12 +3,22 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+const hasValidSupabaseUrl = (value: string | undefined) => {
+  if (!value || value === 'https://placeholder.supabase.co') return false
+
+  try {
+    return new URL(value).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+export const isSupabaseConfigured = hasValidSupabaseUrl(supabaseUrl) && Boolean(supabaseAnonKey)
 
 if (!isSupabaseConfigured) {
   // eslint-disable-next-line no-console
   console.warn(
-    '[supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are not set. ' +
+    '[supabase] VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are missing or invalid. ' +
       'Copy .env.example to .env.local locally, or set them as GitHub Actions / Vercel secrets for deploys.',
   )
 }
