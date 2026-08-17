@@ -266,7 +266,7 @@ export function CreditCardsPage() {
             </div>
 
             {/* Desktop table layout */}
-            <div className="hidden sm:block overflow-x-auto">
+            <div className="hidden sm:block overflow-x-auto w-full">
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted">
                   <tr className="border-b border-hairline">
