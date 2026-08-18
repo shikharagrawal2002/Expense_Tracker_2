@@ -83,17 +83,31 @@
   }
 }
 
-@layer utilities {
-  .surface {
-    @apply bg-[var(--color-surface-light)] dark:bg-[var(--color-surface-dark)];
+/* Custom utilities — must use @utility in Tailwind v4, not @layer utilities */
+@utility surface {
+  background-color: var(--color-surface-light);
+  &:where(.dark, .dark *) {
+    background-color: var(--color-surface-dark);
   }
-  .surface-2 {
-    @apply bg-[var(--color-surface-2-light)] dark:bg-[var(--color-surface-2-dark)];
+}
+
+@utility surface-2 {
+  background-color: var(--color-surface-2-light);
+  &:where(.dark, .dark *) {
+    background-color: var(--color-surface-2-dark);
   }
-  .border-hairline {
-    @apply border-[var(--color-border-light)] dark:border-[var(--color-border-dark)];
+}
+
+@utility border-hairline {
+  border-color: var(--color-border-light);
+  &:where(.dark, .dark *) {
+    border-color: var(--color-border-dark);
   }
-  .text-muted {
-    @apply text-[var(--color-text-muted-light)] dark:text-[var(--color-text-muted-dark)];
+}
+
+@utility text-muted {
+  color: var(--color-text-muted-light);
+  &:where(.dark, .dark *) {
+    color: var(--color-text-muted-dark);
   }
 }

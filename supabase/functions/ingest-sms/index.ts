@@ -24,13 +24,23 @@ interface ParsedSms {
   merchant: string | null
 }
 
-// UPI transaction patterns
+// UPI transaction patterns — amount BEFORE keyword (e.g. "Rs 500 debited from ...")
 const UPI_DEBIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:debited|deducted|paid)\s*(?:from|by|via|for)?\s*(.+?)(?:\.|$)/i
 const UPI_CREDIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|received|added)\s*(?:to|by|from|via)?\s*(.+?)(?:\.|$)/i
 
-// Card transaction patterns
+// Card transaction patterns — amount BEFORE keyword (e.g. "Rs 500 spent at ...")
 const CARD_DEBIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:spent|withdrawn|used|debited|purchase|txn)\s*(?:at|on|via)?\s*(.+?)(?:\.|$)/i
 const CARD_CREDIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|refund|payment received|cashback)\s*(?:at|from|on|via)?\s*(.+?)(?:\.|$)/i
+
+// Amount AFTER keyword patterns — Indian bank SMS format:
+//   "Your A/c XX8295 debited by Rs. 51.00 on 18/08/26"
+//   "Your A/c XXXXX738295 is debited by INR 1,00,000.00 on 17/08/26"
+//   "Your A/c XXXXXXX8295 has been credited with Rs. 100,000.00 on 17-08-2026"
+const DEBITED_BY_RE = /(?:debited|deducted)\s+by\s+(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)/i
+const CREDITED_WITH_RE = /(?:credited|received)\s+with\s+(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)/i
+const CREDITED_TO_RE = /(?:credited|received)\s+(?:to|into)\s+(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)/i
+const DEBITED_AMOUNT_RE = /(?:debited|deducted)\s+(?:with\s+)?(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)/i
+const CREDITED_AMOUNT_RE = /(?:credited|received)\s+(?:with\s+)?(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)/i
 
 // Generic amount extraction (with currency prefix)
 const AMOUNT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)/i
@@ -119,6 +129,58 @@ function parseSmsText(text: string): ParsedSms {
     type = 'credit'
     description = cardCreditMatch[2]?.trim() ?? null
     merchant = extractMerchant(description ?? '', text)
+    return { amount, type, description, merchant }
+  }
+
+  // Try "debited by Rs. [amount]" — amount AFTER the keyword
+  // e.g. "Your A/c XX8295 debited by Rs. 51.00 on 18/08/26"
+  const debitedByMatch = text.match(DEBITED_BY_RE)
+  if (debitedByMatch) {
+    amount = parseAmount(debitedByMatch[1])
+    type = 'debit'
+    description = text.replace(DEBITED_BY_RE, '').trim().substring(0, 200)
+    merchant = extractMerchant(description, text)
+    return { amount, type, description, merchant }
+  }
+
+  // Try "credited with Rs. [amount]" — amount AFTER the keyword
+  // e.g. "Your A/c XXXXXXX8295 has been credited with Rs. 100,000.00"
+  const creditedWithMatch = text.match(CREDITED_WITH_RE)
+  if (creditedWithMatch) {
+    amount = parseAmount(creditedWithMatch[1])
+    type = 'credit'
+    description = text.replace(CREDITED_WITH_RE, '').trim().substring(0, 200)
+    merchant = extractMerchant(description, text)
+    return { amount, type, description, merchant }
+  }
+
+  // Try "credited to Rs. [amount]" — amount AFTER the keyword
+  const creditedToMatch = text.match(CREDITED_TO_RE)
+  if (creditedToMatch) {
+    amount = parseAmount(creditedToMatch[1])
+    type = 'credit'
+    description = text.replace(CREDITED_TO_RE, '').trim().substring(0, 200)
+    merchant = extractMerchant(description, text)
+    return { amount, type, description, merchant }
+  }
+
+  // Try "debited Rs. [amount]" / "debited with Rs. [amount]"
+  const debitedAmountMatch = text.match(DEBITED_AMOUNT_RE)
+  if (debitedAmountMatch) {
+    amount = parseAmount(debitedAmountMatch[1])
+    type = 'debit'
+    description = text.replace(DEBITED_AMOUNT_RE, '').trim().substring(0, 200)
+    merchant = extractMerchant(description, text)
+    return { amount, type, description, merchant }
+  }
+
+  // Try "credited Rs. [amount]" / "credited with Rs. [amount]"
+  const creditedAmountMatch = text.match(CREDITED_AMOUNT_RE)
+  if (creditedAmountMatch) {
+    amount = parseAmount(creditedAmountMatch[1])
+    type = 'credit'
+    description = text.replace(CREDITED_AMOUNT_RE, '').trim().substring(0, 200)
+    merchant = extractMerchant(description, text)
     return { amount, type, description, merchant }
   }
 
