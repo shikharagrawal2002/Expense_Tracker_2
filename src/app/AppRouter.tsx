@@ -19,6 +19,9 @@ import { DebtsPage } from '@/features/debts/debts-page'
 import { AnalyticsPage } from '@/features/analytics/analytics-page'
 import { ReportsPage } from '@/features/reports/reports-page'
 import { SettingsPage } from '@/features/settings/settings-page'
+import { DataPage } from '@/features/settings/data-page'
+import { AutomationPage } from '@/features/settings/automation-page'
+import { OnboardingPage } from '@/features/onboarding/onboarding-page'
 import { SmsPage } from '@/features/sms/sms-page'
 import { SmsSettingsPage } from '@/features/sms/sms-settings-page'
 
@@ -50,6 +53,9 @@ const router = createBrowserRouter(
             { path: 'analytics', element: <AnalyticsPage /> },
             { path: 'reports', element: <ReportsPage /> },
             { path: 'settings', element: <SettingsPage /> },
+            { path: 'settings/data', element: <DataPage /> },
+            { path: 'settings/automation', element: <AutomationPage /> },
+            { path: 'onboarding', element: <OnboardingPage /> },
             { path: 'sms', element: <SmsPage /> },
             { path: 'sms/settings', element: <SmsSettingsPage /> },
           ],

@@ -54,7 +54,30 @@ export async function createSplitGroup(input: NewSplitGroup): Promise<SplitGroup
   return group as SplitGroup
 }
 
-export async function setParticipantSettled(id: string, isSettled: boolean): Promise<SplitParticipant> {
+/** Settles a participant. When isSettled=true and an accountId is provided,
+ *  the offsetting reimbursement transaction is auto-posted via the
+ *  settle_split_participant RPC (money received → the chosen account,
+ *  categorised as a reimbursement so it doesn't distort savings rate). */
+export async function setParticipantSettled(id: string, isSettled: boolean, accountId?: string): Promise<SplitParticipant> {
+  if (isSettled && accountId) {
+    const { error } = await supabase.rpc('settle_split_participant', {
+      p_participant_id: id,
+      p_account_id: accountId,
+    })
+    if (error) throw error
+    // Recompute balances after the reimbursement transaction.
+    await recalculateBalances([accountId])
+    // Return the participant (now settled).
+    const { data: updated, error: fetchError } = await supabase
+      .from('split_participants')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (fetchError) throw fetchError
+    return updated as SplitParticipant
+  }
+
+  // Manual toggle (unsettle or settle without auto-posting)
   const { data, error } = await supabase
     .from('split_participants')
     .update({ is_settled: isSettled, settled_at: isSettled ? new Date().toISOString() : null })
@@ -130,4 +153,14 @@ export async function fetchOwedByPerson(): Promise<OwedByPerson[]> {
     totals.set(key, (totals.get(key) ?? 0) + Number(row.share_amount))
   }
   return [...totals.entries()].map(([name, amount]) => ({ name, amount })).sort((a, b) => b.amount - a.amount)
+}
+
+/** Recomputes the given accounts' current_balance from the transaction ledger.
+ *  Idempotent — safe to call after any operation that may have caused the
+ *  incremental balance-sync triggers to drift. */
+export async function recalculateBalances(accountIds?: string[]): Promise<void> {
+  const { error } = await supabase.rpc('recalculate_balances', {
+    p_account_ids: accountIds && accountIds.length > 0 ? accountIds : null,
+  })
+  if (error) throw error
 }

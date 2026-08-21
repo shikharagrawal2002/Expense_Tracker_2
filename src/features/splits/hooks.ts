@@ -31,8 +31,14 @@ export function useCreateSplitGroup() {
 export function useSetParticipantSettled() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, isSettled }: { id: string; isSettled: boolean }) => setParticipantSettled(id, isSettled),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: SPLITS_KEY }),
+    mutationFn: ({ id, isSettled, accountId }: { id: string; isSettled: boolean; accountId?: string }) =>
+      setParticipantSettled(id, isSettled, accountId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: SPLITS_KEY })
+      // The auto-posted reimbursement transaction affects the ledger.
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
   })
 }
 

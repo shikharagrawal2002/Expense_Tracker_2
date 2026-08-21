@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Sun, Moon, Monitor, LogOut, Loader2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Sun, Moon, Monitor, LogOut, Loader2, Database, Zap } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
@@ -101,6 +102,28 @@ export function SettingsPage() {
               ))}
             </select>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Data & automation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Link to="/settings/data" className="flex items-center gap-3 rounded-lg border border-hairline px-3 py-2.5 hover:surface-2 transition-colors">
+            <Database className="h-4 w-4 text-[var(--color-brand-500)]" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Data & email imports</p>
+              <p className="text-xs text-muted">Email statement ingestion, inbound address, import history</p>
+            </div>
+          </Link>
+          <Link to="/settings/automation" className="flex items-center gap-3 rounded-lg border border-hairline px-3 py-2.5 hover:surface-2 transition-colors">
+            <Zap className="h-4 w-4 text-[var(--color-warning-500)]" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Automation</p>
+              <p className="text-xs text-muted">Auto-confirm SMS, learned merchant rules, safety rails</p>
+            </div>
+          </Link>
         </CardContent>
       </Card>
 
