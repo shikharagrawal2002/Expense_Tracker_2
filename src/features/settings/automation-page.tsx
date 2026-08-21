@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Zap, ShieldCheck, Trash2, ToggleLeft, ToggleRight, Loader2 } from 'lucide-react'
+import { Zap, ShieldCheck, Trash2, ToggleLeft, ToggleRight } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { Badge } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'

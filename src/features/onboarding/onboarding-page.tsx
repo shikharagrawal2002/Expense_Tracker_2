@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { useProfile, useUpdateProfile } from '@/features/settings/hooks'
+import { useUpdateProfile } from '@/features/settings/hooks'
 import { useCreateAccount } from '@/features/accounts/hooks'
 import { useSmsApiKey, useGenerateSmsApiKey } from '@/features/sms/hooks'
 import { supabase } from '@/lib/supabase/client'
@@ -14,7 +14,6 @@ const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD']
 
 export function OnboardingPage() {
   const navigate = useNavigate()
-  const { data: profile } = useProfile()
   const updateProfile = useUpdateProfile()
   const createAccount = useCreateAccount()
   const { data: smsApiKey } = useSmsApiKey()
@@ -121,7 +120,7 @@ export function OnboardingPage() {
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-1.5">
-          {steps.map((s, i) => (
+          {steps.map((_, i) => (
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all ${

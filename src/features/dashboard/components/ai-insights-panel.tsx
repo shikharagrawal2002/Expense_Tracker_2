@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Sparkles, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react'
+import { Sparkles, RefreshCw, Loader2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { fetchLatestAiInsights, refreshAiInsights, type AiInsightRow } from '@/features/dashboard/api'
+import { fetchLatestAiInsights, refreshAiInsights } from '@/features/dashboard/api'
 
 const AI_INSIGHTS_KEY = ['ai-insights'] as const
 
