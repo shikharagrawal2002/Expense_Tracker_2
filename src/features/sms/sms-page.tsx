@@ -58,7 +58,8 @@ export function SmsPage() {
         <div>
           <h1 className="font-display text-2xl font-semibold">SMS Transactions</h1>
           <p className="text-sm text-muted mt-0.5">
-            Bank/UPI SMS forwarded from your phone. Review, edit values, and confirm to add them as transactions.
+            Bank/UPI SMS and app alerts (e.g. Slice) forwarded from your phone. Review, edit values, and confirm to add them as transactions.
+            App-based alerts require Notification access in the Ledger SMS app.
           </p>
         </div>
         <div className="flex gap-2">

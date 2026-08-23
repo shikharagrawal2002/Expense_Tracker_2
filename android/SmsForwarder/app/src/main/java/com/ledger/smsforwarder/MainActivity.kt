@@ -1,9 +1,11 @@
 package com.ledger.smsforwarder
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.provider.Telephony
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +39,10 @@ class MainActivity : AppCompatActivity() {
             requestSmsPermissions()
         }
 
+        binding.buttonGrantNotificationAccess.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+
         binding.buttonOpenSettings.setOnClickListener {
             SettingsActivity.start(this)
         }
@@ -59,20 +65,32 @@ class MainActivity : AppCompatActivity() {
         } else true
 
         val isConfigured = apiKey.isNotBlank() && serverUrl.isNotBlank()
-        val isDefaultSms = Telephony.Sms.getDefaultSmsPackage(this) == packageName
+
+        // Notification access lets us read transaction alerts from fintech
+        // apps (Slice, etc.) that don't send regular bank SMS.
+        val enabledListeners = Settings.Secure.getString(
+            contentResolver,
+            "enabled_notification_listeners",
+        ) ?: ""
+        val hasNotificationAccess = enabledListeners.split(":")
+            .any { it.substringAfterLast('/').equals(packageName, ignoreCase = true) }
 
         binding.textStatus.text = when {
             !hasSmsPermission -> "⚠️ SMS permission not granted"
             !isConfigured -> "⚠️ Configure API key & server URL in Settings"
-            else -> """
-                ✅ SMS Forwarding Active
-                
-                Server: $serverUrl
-                API Key: ${apiKey.take(8)}...
-                
-                Note: This app does NOT need to be your default SMS app.
-                It reads incoming SMS broadcasts without intercepting them.
-            """.trimIndent()
+            else -> buildString {
+                appendLine("✅ SMS Forwarding Active")
+                if (hasNotificationAccess) {
+                    appendLine("✅ App alerts active (Slice)")
+                } else {
+                    appendLine("⚠️ App alerts off — tap 'Enable App Alerts'")
+                }
+                appendLine()
+                appendLine("Server: $serverUrl")
+                appendLine("API Key: ${apiKey.take(8)}...")
+                appendLine()
+                append("Note: This app does NOT need to be your default SMS app.")
+            }
         }
     }
 

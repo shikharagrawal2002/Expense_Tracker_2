@@ -25,6 +25,21 @@
             android:defaultValue="true" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="App notifications">
+        <EditTextPreference
+            android:key="monitored_apps"
+            android:title="Monitored apps"
+            android:summary="Comma-separated package IDs of fintech apps whose transaction notifications should be forwarded (e.g. Slice). Default: com.sliceapp.android"
+            android:defaultValue="com.sliceapp.android"
+            android:persistent="true" />
+
+        <Preference
+            android:key="open_notification_access"
+            android:title="Grant notification access"
+            android:summary="Required to read transaction alerts from apps like Slice that don't send regular SMS. Opens Android's Notification access settings."
+            android:persistent="false" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="About">
         <Preference
             android:key="about"

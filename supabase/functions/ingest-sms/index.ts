@@ -59,7 +59,10 @@ const BANK_PATTERNS: Array<[RegExp, string]> = [
   [/(Yes\s*Bank|YESBANK)/i, 'Yes Bank'],
   [/(IndusInd\s*Bank|INDB)/i, 'IndusInd Bank'],
   [/(IDFC\s*First|IDFCB)/i, 'IDFC First Bank'],
-  [/(Paytm\s*Payments|PAYTM)/i, 'Paytm Payments Bank'],
+    [/(Paytm\s*Payments|PAYTM)/i, 'Paytm Payments Bank'],
+    // Fintech apps that send alerts as app notifications (forwarded by the
+    // Ledger SMS Forwarder's notification listener with senderPhone "APP:slice")
+    [/(slice)/i, 'Slice'],
 ]
 
 // Merchant/description extraction from common SMS patterns

@@ -3,6 +3,7 @@ package com.ledger.smsforwarder
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
@@ -46,6 +47,13 @@ class SettingsActivity : AppCompatActivity() {
             apiKeyPref?.setOnPreferenceChangeListener { pref, newValue ->
                 val valStr = newValue.toString()
                 pref.summary = if (valStr.length > 8) "${valStr.take(8)}..." else valStr
+                true
+            }
+
+            // Opens Android's Notification access screen so the user can grant
+            // read access for fintech app alerts (Slice, etc.).
+            findPreference<Preference>("open_notification_access")?.setOnPreferenceClickListener {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                 true
             }
         }
