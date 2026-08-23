@@ -1,24 +1,32 @@
-// App Lock overlay that appears when a logged-in user hasn't unlocked the
-// encryption key (e.g. after a page refresh or on-device restart with the
-// session persisted).
+// App Lock overlay shown when a logged-in user hasn't unlocked the E2E
+// encryption key (e.g. after a page refresh or device restart).
 //
-// On Android (Capacitor) this uses the native BiometricPrompt via
-// @aparajita/capacitor-biometric-auth. On web it falls back to WebAuthn
-// (platform authenticator) so the flow still works in browsers.
+// Unlock options:
+//  - Account password (default) — matches how the vault was originally wrapped
+//    at signup/login (PBKDF2 over the Supabase password).
+//  - Security PIN — only valid if the user rotated the KEK to a PIN in Settings.
+//
+// On Android (Capacitor) the native BiometricPrompt is also offered; on web
+// WebAuthn platform authenticator is used as the biometric fallback.
 
 import { useEffect, useRef, useState } from 'react'
-import { ShieldCheck, Loader2, Lock } from 'lucide-react'
+import { ShieldCheck, Loader2, Lock, KeyRound, Fingerprint } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { unlockWithCredential } from '@/lib/crypto/auth-encryption'
 import { authenticateWithBiometrics, isNativeBiometricSupported } from '@/lib/native/biometric'
+import { useAuth } from '@/features/auth/use-auth'
 
 interface AppLockProps {
   userId: string
   onUnlocked: () => void
 }
 
+type Mode = 'password' | 'pin'
+
 export function AppLock({ userId, onUnlocked }: AppLockProps) {
-  const [pin, setPin] = useState('')
+  const { signOut } = useAuth()
+  const [mode, setMode] = useState<Mode>('password')
+  const [secret, setSecret] = useState('')
   const [attempting, setAttempting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
@@ -44,17 +52,23 @@ export function AppLock({ userId, onUnlocked }: AppLockProps) {
   }, [])
 
   const handleUnlock = async () => {
-    if (pin.length < 4 || attempting) return
+    if (secret.length < 4 || attempting) return
     setAttempting(true)
     setError(null)
 
     try {
-      const ok = await unlockWithCredential(userId, pin, false)
+      // Password mode unwraps the original vault; PIN mode only works if the
+      // user rotated the KEK to a PIN in Settings → Encryption.
+      const ok = await unlockWithCredential(userId, secret, mode === 'password')
       if (ok) {
         onUnlocked()
       } else {
-        setError('Incorrect PIN. Try again.')
-        setPin('')
+        setError(
+          mode === 'password'
+            ? 'Incorrect account password.'
+            : 'Incorrect PIN. If you never set a PIN, unlock with your account password.',
+        )
+        setSecret('')
         inputRef.current?.focus()
       }
     } finally {
@@ -71,11 +85,9 @@ export function AppLock({ userId, onUnlocked }: AppLockProps) {
       if (result === 'success') {
         onUnlocked()
       } else if (result === 'cancelled') {
-        // User dismissed the prompt — keep the PIN input available.
-        setPin('')
         inputRef.current?.focus()
       } else {
-        setError('Biometric authentication cancelled or unavailable.')
+        setError('Biometric authentication unavailable.')
       }
     } catch {
       setError('Biometric authentication cancelled or unavailable.')
@@ -91,9 +103,38 @@ export function AppLock({ userId, onUnlocked }: AppLockProps) {
           <Lock className="h-6 w-6 text-[var(--color-brand-500)]" />
         </div>
         <h1 className="font-display text-xl font-semibold mt-4">Ledger Locked</h1>
-        <p className="text-sm text-muted mt-1 mb-6">
-          Your data is encrypted. Enter your security PIN {biometricAvailable ? 'or use biometrics' : ''} to unlock.
+        <p className="text-sm text-muted mt-1 mb-5">
+          Your data is encrypted. Enter your{' '}
+          <span className="font-medium">{mode === 'password' ? 'account password' : 'security PIN'}</span> to unlock.
         </p>
+
+        {/* Mode switch */}
+        <div className="grid grid-cols-2 gap-1 surface-2 rounded-lg p-1 mb-4">
+          <button
+            onClick={() => {
+              setMode('password')
+              setSecret('')
+              setError(null)
+              inputRef.current?.focus()
+            }}
+            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${mode === 'password' ? 'surface shadow-sm' : 'text-muted'}`}
+          >
+            <KeyRound className="h-3 w-3" />
+            Password
+          </button>
+          <button
+            onClick={() => {
+              setMode('pin')
+              setSecret('')
+              setError(null)
+              inputRef.current?.focus()
+            }}
+            className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium transition-colors ${mode === 'pin' ? 'surface shadow-sm' : 'text-muted'}`}
+          >
+            <ShieldCheck className="h-3 w-3" />
+            Security PIN
+          </button>
+        </div>
 
         <form
           onSubmit={(e) => {
@@ -104,20 +145,23 @@ export function AppLock({ userId, onUnlocked }: AppLockProps) {
         >
           <input
             ref={inputRef}
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            value={pin}
+            type={mode === 'password' ? 'password' : 'password'}
+            inputMode={mode === 'pin' ? 'numeric' : 'text'}
+            autoComplete={mode === 'password' ? 'current-password' : 'off'}
+            value={secret}
             onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, '').slice(0, 6)
-              setPin(digits)
+              if (mode === 'pin') {
+                setSecret(e.target.value.replace(/\D/g, '').slice(0, 6))
+              } else {
+                setSecret(e.target.value)
+              }
             }}
-            placeholder="••••••"
-            className="w-full text-center font-mono text-lg tracking-[0.5em] h-12 rounded-xl surface-2 border border-hairline px-3"
-            aria-label="Security PIN"
+            placeholder={mode === 'password' ? 'Your account password' : '••••••'}
+            className="w-full text-center font-mono text-base h-12 rounded-xl surface-2 border border-hairline px-3"
+            aria-label={mode === 'password' ? 'Account password' : 'Security PIN'}
           />
           {error && <p className="text-xs text-[var(--color-negative-600)]">{error}</p>}
-          <Button type="submit" className="w-full" disabled={attempting || pin.length < 4}>
+          <Button type="submit" className="w-full" disabled={attempting || secret.length < 4}>
             {attempting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
             Unlock
           </Button>
@@ -125,16 +169,17 @@ export function AppLock({ userId, onUnlocked }: AppLockProps) {
 
         {biometricAvailable && (
           <Button variant="outline" className="w-full mt-3" onClick={() => void handleBiometric()} disabled={attempting}>
-            <Lock className="h-4 w-4" />
+            <Fingerprint className="h-4 w-4" />
             Use biometrics
           </Button>
         )}
 
-        <p className="text-[11px] text-muted mt-6">
-          {isNativeBiometricSupported()
-            ? 'Protected by Android Keystore + BiometricPrompt.'
-            : 'Uses WebAuthn on the web; Android uses the native BiometricPrompt.'}
-        </p>
+        <button
+          onClick={() => void signOut()}
+          className="mt-6 text-xs text-muted hover:text-[var(--color-negative-600)] underline underline-offset-2"
+        >
+          Sign out instead
+        </button>
       </div>
     </div>
   )
