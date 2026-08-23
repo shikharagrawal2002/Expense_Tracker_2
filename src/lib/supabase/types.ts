@@ -221,6 +221,25 @@ export interface StatementPassword {
   updated_at: string
 }
 
+// ----------------------------------------------------------------------------
+// E2E encryption key vault (Phase 2)
+// ----------------------------------------------------------------------------
+
+export interface EncryptionKeyRow {
+  id: string
+  user_id: string
+  /** Ciphertext scheme version ("v1"). */
+  version: string
+  /** Base64url-encoded PBKDF2 salt used for KEK derivation. */
+  salt: string
+  /** PBKDF2 iteration count. */
+  iterations: number
+  /** IV + AES-GCM ciphertext of the wrapped Data Encryption Key (DEK). */
+  wrapped_dek: string
+  created_at: string
+  updated_at: string
+}
+
 export interface ParseStatementResult {
   transactions: ParsedTransaction[]
   cardSummary?: CardStatementSummary

@@ -1,11 +1,14 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
+import { ensureEncryptionSetup, unlockWithCredential } from '@/lib/crypto/auth-encryption'
+import { clearUnlockedKey, hasUnlockedKey } from '@/lib/crypto/key-manager'
 
 interface AuthContextValue {
   session: Session | null
   user: User | null
   isLoading: boolean
+  isEncryptionUnlocked: boolean
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>
   signUpWithPassword: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>
   signInWithOAuth: (provider: 'google' | 'github') => Promise<void>
@@ -17,6 +20,15 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isEncryptionUnlocked, setIsEncryptionUnlocked] = useState(false)
+
+  // On session restore (page refresh), keep the key unlocked if it's already
+  // in memory; otherwise the AppLock screen asks for the security PIN.
+  useEffect(() => {
+    if (session?.user && hasUnlockedKey()) {
+      setIsEncryptionUnlocked(true)
+    }
+  }, [session?.user?.id])
 
   useEffect(() => {
     supabase.auth
@@ -40,8 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithPassword: AuthContextValue['signInWithPassword'] = async (email, password) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      return { error: error?.message ?? null }
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) return { error: error?.message ?? null }
+      if (!data.user) return { error: 'Sign-in succeeded but no user was returned.' }
+
+      // E2E: set up the vault on first login, then unlock with the password.
+      try {
+        await ensureEncryptionSetup(data.user.id, password, true)
+        await unlockWithCredential(data.user.id, password, true)
+        setIsEncryptionUnlocked(true)
+      } catch (e) {
+        // Best-effort — if the vault table doesn't exist yet, the app still works.
+        console.warn('[encryption] Could not set up encryption:', e)
+      }
+      return { error: null }
     } catch {
       return { error: 'Unable to connect to Supabase. Check the project configuration and try again.' }
     }
@@ -49,12 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUpWithPassword: AuthContextValue['signUpWithPassword'] = async (email, password, fullName) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { full_name: fullName } },
       })
-      return { error: error?.message ?? null }
+      if (error) return { error: error?.message ?? null }
+      if (data.user) {
+        try {
+          await ensureEncryptionSetup(data.user.id, password, true)
+          setIsEncryptionUnlocked(true)
+        } catch (e) {
+          console.warn('[app] Could not set up encryption:', e)
+        }
+      }
+      return { error: null }
     } catch {
       return { error: 'Unable to connect to Supabase. Check the project configuration and try again.' }
     }
@@ -69,6 +102,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    clearUnlockedKey()
+    setIsEncryptionUnlocked(false)
   }
 
   return (
@@ -77,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         user: session?.user ?? null,
         isLoading,
+        isEncryptionUnlocked,
         signInWithPassword,
         signUpWithPassword,
         signInWithOAuth,

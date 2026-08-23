@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ledger Finance</string>
+    <string name="title_activity_main">Ledger Finance</string>
+    <string name="package_name">com.ledger.finance</string>
+    <string name="custom_url_scheme">com.ledger.finance</string>
+</resources>

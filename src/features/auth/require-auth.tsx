@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth/use-auth'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 import { Sparkles } from 'lucide-react'
+import { AppLock } from '@/components/layout/app-lock'
 
 function useOnboarded() {
   return useQuery({
@@ -23,9 +25,10 @@ function useOnboarded() {
 }
 
 export function RequireAuth() {
-  const { session, isLoading } = useAuth()
+  const { session, isLoading, isEncryptionUnlocked } = useAuth()
   const location = useLocation()
   const { data: onboarded, isLoading: onboardedLoading } = useOnboarded()
+  const [lockDismissed, setLockDismissed] = useState(false)
 
   if (isLoading || onboardedLoading) {
     return (
@@ -37,6 +40,18 @@ export function RequireAuth() {
 
   if (!session) {
     return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  // On session restore (page refresh / app relaunch), if the encryption key
+  // isn't already unlocked in memory, show the AppLock screen until the user
+  // enters their security PIN. No sensitive data is rendered underneath.
+  if (!isEncryptionUnlocked && !lockDismissed && session.user) {
+    return (
+      <>
+        <AppLock userId={session.user.id} onUnlocked={() => setLockDismissed(true)} />
+        <Outlet />
+      </>
+    )
   }
 
   // Force onboarding on first login until complete

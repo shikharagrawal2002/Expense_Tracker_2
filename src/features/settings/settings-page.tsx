@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { useTheme } from '@/lib/hooks/useTheme'
 import { useAuth } from '@/features/auth/use-auth'
 import { useProfile, useUpdateProfile } from '@/features/settings/hooks'
+import { EncryptionCard } from '@/features/settings/encryption-card'
 
 const THEME_OPTIONS = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -43,6 +44,8 @@ export function SettingsPage() {
   return (
     <div className="max-w-[700px] space-y-6">
       <h1 className="font-display text-2xl font-semibold">Settings</h1>
+
+      <EncryptionCard />
 
       <Card>
         <CardHeader>

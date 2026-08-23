@@ -1,15 +1,44 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Transaction, NewTransaction } from '@/lib/supabase/types'
+import { decryptField, encryptField } from '@/lib/crypto/fields'
+
+async function encryptTxnRow(row: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const result = { ...row }
+  if (typeof result.notes === 'string' && result.notes !== '') {
+    result.notes = (await encryptField(result.notes)) ?? result.notes
+  }
+  if (typeof result.amount === 'number') {
+    result.amount = (await encryptField(String(result.amount))) ?? String(result.amount)
+  }
+  if (typeof result.location === 'string' && result.location !== '') {
+    result.location = (await encryptField(result.location)) ?? result.location
+  }
+  return result
+}
+
+async function decryptTxns(rows: Transaction[]): Promise<Transaction[]> {
+  const decrypted: Transaction[] = []
+  for (const row of rows) {
+    const notes = row.notes ? await decryptField(row.notes) : row.notes
+    const amountStr = await decryptField(String(row.amount))
+    const location = row.location ? await decryptField(row.location) : row.location
+    const amount = amountStr ? Number(amountStr) : row.amount
+    decrypted.push({
+      ...row,
+      notes: notes ?? row.notes,
+      location: location ?? row.location,
+      amount: Number.isNaN(amount) ? row.amount : amount,
+    })
+  }
+  return decrypted
+}
 
 export interface TransactionFilters {
   search?: string
-  /** One or more account IDs to filter by. When empty, all accounts are shown. */
   accountIds?: string[]
   categoryId?: string
   type?: Transaction['type']
-  /** inclusive, ISO date (yyyy-mm-dd) or full timestamp */
   dateFrom?: string
-  /** inclusive, ISO date (yyyy-mm-dd) or full timestamp */
   dateTo?: string
 }
 
@@ -23,12 +52,6 @@ export async function fetchTransactions(filters: TransactionFilters = {}): Promi
     .order('occurred_at', { ascending: false })
     .limit(500)
 
-  // Matches account_id (the source of every income/expense/transfer, and the
-  // destination for non-transfers where transfer_account_id is null) OR
-  // transfer_account_id (the destination side of a transfer) — so filtering by
-  // an account shows transfers where that account was either side, not just
-  // the source. With multiple accounts selected, a transaction matches if
-  // either side is one of the selected accounts.
   if (filters.accountIds && filters.accountIds.length > 0) {
     const ids = filters.accountIds.join(',')
     query = query.or(`account_id.in.(${ids}),transfer_account_id.in.(${ids})`)
@@ -41,7 +64,7 @@ export async function fetchTransactions(filters: TransactionFilters = {}): Promi
 
   const { data, error } = await query
   if (error) throw error
-  return data as unknown as Transaction[]
+  return await decryptTxns(data as unknown as Transaction[])
 }
 
 export async function createTransaction(input: NewTransaction): Promise<Transaction> {
@@ -49,13 +72,16 @@ export async function createTransaction(input: NewTransaction): Promise<Transact
   const userId = userData.user?.id
   if (!userId) throw new Error('Not authenticated')
 
+  const row = { ...input, user_id: userId, currency: input.currency ?? 'INR' }
+  const encrypted = await encryptTxnRow(row as Record<string, unknown>)
   const { data, error } = await supabase
     .from('transactions')
-    .insert({ ...input, user_id: userId, currency: input.currency ?? 'INR' })
+    .insert(encrypted as never)
     .select(SELECT_WITH_JOINS)
     .single()
   if (error) throw error
-  return data as unknown as Transaction
+  const rows = await decryptTxns([data as unknown as Transaction])
+  return rows[0]
 }
 
 export interface EditTransactionInput {
@@ -69,10 +95,8 @@ export interface EditTransactionInput {
   notes?: string | null
 }
 
-/** Uses the edit_transaction() Postgres function (migration 0004) so the
- *  account-balance reversal/reapply happens atomically, since the balance
- *  trigger only fires on INSERT/DELETE and not on UPDATE. */
 export async function editTransaction(input: EditTransactionInput): Promise<Transaction> {
+  const notes = input.notes ? (await encryptField(input.notes)) ?? input.notes : null
   const { error } = await supabase.rpc('edit_transaction', {
     p_id: input.id,
     p_account_id: input.account_id,
@@ -81,35 +105,20 @@ export async function editTransaction(input: EditTransactionInput): Promise<Tran
     p_type: input.type,
     p_amount: input.amount,
     p_occurred_at: input.occurred_at,
-    p_notes: input.notes ?? null,
+    p_notes: notes,
   })
   if (error) throw error
-  // After editing, fetch the updated transaction to return it
+
   const { data: updatedTxn, error: fetchError } = await supabase
     .from('transactions')
-    .select('*')
+    .select(SELECT_WITH_JOINS)
     .eq('id', input.id)
     .single()
   if (fetchError) throw fetchError
-  return updatedTxn as Transaction
+  const rows = await decryptTxns([updatedTxn as unknown as Transaction])
+  return rows[0]
 }
 
-/** Reconstructs what the selected accounts' (or, if accountIds is empty, every
- *  account's combined) balance was at the end of a given date.
- *
- *  This delegates to the get_balance_as_of() Postgres function (migration
- *  0019) so the sum happens in SQL — the previous client-side implementation
- *  fetched every transaction up to the date into the browser, but Supabase's
- *  JS client caps a single select at 1000 rows, so once a user had more than
- *  1000 transactions before the as-of date the query silently truncated and
- *  the reconstructed balance was wildly wrong (e.g. -₹83L).
- *
- *  It also deliberately starts from opening_balance and applies transactions
- *  forward, rather than working backwards from current_balance — because
- *  credit-card accounts have their current_balance reset to 0 by
- *  set_card_statement_paid() (migration 0010) when a statement is marked paid,
- *  while the underlying transactions remain in the ledger. The ledger is the
- *  source of truth. */
 export async function fetchBalanceAsOf(accountIds: string[], asOfDate: string): Promise<number> {
   const { data, error } = await supabase.rpc('get_balance_as_of', {
     p_account_ids: accountIds.length > 0 ? accountIds : null,

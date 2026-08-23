@@ -40,9 +40,11 @@ class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
 
+        // Secrets are read from Android Keystore-backed AES-GCM storage
+        val secretStore = SecretStore(context)
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val apiKey = prefs.getString("api_key", "") ?: ""
-        val serverUrl = prefs.getString("server_url", "") ?: ""
+        val apiKey = secretStore.readSecret("api_key") ?: ""
+        val serverUrl = secretStore.readSecret("server_url") ?: ""
         val enabledOnly = prefs.getBoolean("filter_bank_sms", true)
 
         if (apiKey.isBlank() || serverUrl.isBlank()) {
@@ -96,13 +98,6 @@ class SmsReceiver : BroadcastReceiver() {
     /**
      * Returns true if the message contains both a monetary value and a
      * transaction keyword.
-     *
-     * The amount must be either:
-     *  - prefixed with a currency symbol/prefix (Rs 500, Rs.51.00, ₹1,234, INR 56,789), or
-     *  - a number with decimal places (51.00, 1,234.56)
-     *
-     * This prevents random bank SMS (offers, balance alerts, promotions)
-     * from being forwarded.
      */
     private fun isTransactionSms(text: String): Boolean {
         val lower = text.lowercase()
@@ -145,7 +140,6 @@ class SmsReceiver : BroadcastReceiver() {
 
             if (response.isSuccessful) {
                 Log.d(TAG, "SMS forwarded successfully: $responseBody")
-                // Show a notification for the forwarded SMS
                 NotificationHelper.showForwardedNotification(context, rawText)
             } else {
                 Log.e(TAG, "Failed to forward SMS: ${response.code} $responseBody")
