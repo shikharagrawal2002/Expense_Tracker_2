@@ -31,14 +31,17 @@ create table if not exists public.ai_insights (
 
 alter table public.ai_insights enable row level security;
 
+drop policy if exists "Users can read own AI insights" on public.ai_insights;
 create policy "Users can read own AI insights"
   on public.ai_insights for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own AI insights" on public.ai_insights;
 create policy "Users can insert own AI insights"
   on public.ai_insights for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own AI insights" on public.ai_insights;
 create policy "Users can update own AI insights"
   on public.ai_insights for update
   using (auth.uid() = user_id);
@@ -61,18 +64,22 @@ create table if not exists public.email_ingest_addresses (
 
 alter table public.email_ingest_addresses enable row level security;
 
+drop policy if exists "Users can read own email ingest addresses" on public.email_ingest_addresses;
 create policy "Users can read own email ingest addresses"
   on public.email_ingest_addresses for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own email ingest addresses" on public.email_ingest_addresses;
 create policy "Users can insert own email ingest addresses"
   on public.email_ingest_addresses for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own email ingest addresses" on public.email_ingest_addresses;
 create policy "Users can update own email ingest addresses"
   on public.email_ingest_addresses for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own email ingest addresses" on public.email_ingest_addresses;
 create policy "Users can delete own email ingest addresses"
   on public.email_ingest_addresses for delete
   using (auth.uid() = user_id);
@@ -102,10 +109,12 @@ create table if not exists public.email_ingest_log (
 
 alter table public.email_ingest_log enable row level security;
 
+drop policy if exists "Users can read own email ingest log" on public.email_ingest_log;
 create policy "Users can read own email ingest log"
   on public.email_ingest_log for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own email ingest log" on public.email_ingest_log;
 create policy "Users can insert own email ingest log"
   on public.email_ingest_log for insert
   with check (auth.uid() = user_id);
@@ -138,6 +147,7 @@ create table if not exists public.nav_history (
 alter table public.nav_history enable row level security;
 
 -- NAV data is public reference data — anyone can read it.
+drop policy if exists "Anyone can read NAV history" on public.nav_history;
 create policy "Anyone can read NAV history"
   on public.nav_history for select
   using (true);
@@ -165,20 +175,28 @@ create table if not exists public.investment_transactions (
   unique (user_id, external_ref)
 );
 
+-- Ensure user_id exists even if the table was created by an earlier migration
+alter table public.investment_transactions
+  add column if not exists user_id uuid references auth.users(id) on delete cascade;
+
 alter table public.investment_transactions enable row level security;
 
+drop policy if exists "Users can read own investment transactions" on public.investment_transactions;
 create policy "Users can read own investment transactions"
   on public.investment_transactions for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own investment transactions" on public.investment_transactions;
 create policy "Users can insert own investment transactions"
   on public.investment_transactions for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own investment transactions" on public.investment_transactions;
 create policy "Users can update own investment transactions"
   on public.investment_transactions for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own investment transactions" on public.investment_transactions;
 create policy "Users can delete own investment transactions"
   on public.investment_transactions for delete
   using (auth.uid() = user_id);
@@ -197,18 +215,22 @@ alter table public.investment_holdings
 -- RLS policies for investment_holdings (user-scoped)
 alter table public.investment_holdings enable row level security;
 
+drop policy if exists "Users can read own investment holdings" on public.investment_holdings;
 create policy "Users can read own investment holdings"
   on public.investment_holdings for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own investment holdings" on public.investment_holdings;
 create policy "Users can insert own investment holdings"
   on public.investment_holdings for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own investment holdings" on public.investment_holdings;
 create policy "Users can update own investment holdings"
   on public.investment_holdings for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own investment holdings" on public.investment_holdings;
 create policy "Users can delete own investment holdings"
   on public.investment_holdings for delete
   using (auth.uid() = user_id);
@@ -239,18 +261,22 @@ create table if not exists public.merchant_rules (
 
 alter table public.merchant_rules enable row level security;
 
+drop policy if exists "Users can read own merchant rules" on public.merchant_rules;
 create policy "Users can read own merchant rules"
   on public.merchant_rules for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own merchant rules" on public.merchant_rules;
 create policy "Users can insert own merchant rules"
   on public.merchant_rules for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own merchant rules" on public.merchant_rules;
 create policy "Users can update own merchant rules"
   on public.merchant_rules for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete own merchant rules" on public.merchant_rules;
 create policy "Users can delete own merchant rules"
   on public.merchant_rules for delete
   using (auth.uid() = user_id);
@@ -275,10 +301,12 @@ create table if not exists public.split_settlement_log (
 
 alter table public.split_settlement_log enable row level security;
 
+drop policy if exists "Users can read own split settlement log" on public.split_settlement_log;
 create policy "Users can read own split settlement log"
   on public.split_settlement_log for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own split settlement log" on public.split_settlement_log;
 create policy "Users can insert own split settlement log"
   on public.split_settlement_log for insert
   with check (auth.uid() = user_id);

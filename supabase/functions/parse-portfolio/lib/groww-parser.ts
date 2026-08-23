@@ -33,7 +33,7 @@ export interface GrowwTransaction {
  * Parses the Groww Holdings export.
  *
  * Groww Holdings XLSX typically has columns like:
- *   Scheme Name | Invested Value | Current Value | ... (newer format)
+ *   Scheme Name | Invested Value | Current Value | Units | Average Cost | ISIN | Scheme Code
  * or the older format:
  *   Scheme Name | Units | Current NAV | Current Value | Average Cost | Invested Value
  *
@@ -76,18 +76,26 @@ export function parseGrowwHoldings(content: ExtractedContent): GrowwHolding[] {
     return idx >= 0 ? idx : -1
   }
 
-  const nameCol = col('scheme_name', 'scheme', 'fund', 'mutual_fund', 'name')
-  const investedCol = col('invested', 'invested_value', 'invested_amount', 'total_invested')
-  const currentCol = col('current_value', 'current', 'market_value', 'value')
-  const unitsCol = col('units', 'quantity', 'qty')
-  const avgCostCol = col('average_cost', 'avg_cost', 'average_price', 'plusavg', 'avg')
-  const isinCol = col('isin', 'isin_code')
-  const schemeCodeCol = col('scheme_code', 'scheme_code', 'code')
+  // More robust column matching with many variations
+  const nameCol = col('scheme_name', 'scheme', 'fund_name', 'fund', 'mutual_fund', 'name', 'instrument')
+  const investedCol = col('invested_value', 'invested_amount', 'invested', 'total_invested', 'amount_invested', 'cost_value')
+  const currentCol = col('current_value', 'current', 'market_value', 'value', 'nav_value', 'valuation')
+  const unitsCol = col('units', 'quantity', 'qty', 'unit_balance', 'total_units')
+  const avgCostCol = col('average_cost', 'avg_cost', 'average_price', 'avg_price', 'plusavg', 'avg', 'cost_per_unit')
+  const isinCol = col('isin', 'isin_code', 'isin_number')
+  const schemeCodeCol = col('scheme_code', 'amfi_code', 'code', 'scheme_id')
 
-  if (nameCol < 0) return holdings
+  // If name column not found, try to detect by position (first column is usually the name)
+  let effectiveNameCol = nameCol
+  if (effectiveNameCol < 0 && headerRow.length > 0) {
+    // First column is almost always the scheme name
+    effectiveNameCol = 0
+  }
+
+  if (effectiveNameCol < 0) return holdings
 
   for (const row of rows.slice(1)) {
-    const schemeName = String(row[nameCol] ?? '').trim()
+    const schemeName = String(row[effectiveNameCol] ?? '').trim()
     if (!schemeName || schemeName.toLowerCase().includes('total')) continue
 
     const getNum = (idx: number): number => {
@@ -102,14 +110,18 @@ export function parseGrowwHoldings(content: ExtractedContent): GrowwHolding[] {
     const units = getNum(unitsCol)
     const averageCost = getNum(avgCostCol)
 
+    // If invested/current columns weren't found, try to infer from units × avg cost
+    const inferredInvested = units > 0 && averageCost > 0 ? units * averageCost : 0
+    const finalInvested = investedAmount > 0 ? investedAmount : inferredInvested
+
     const holding: GrowwHolding = {
       schemeName,
       schemeCode: schemeCodeCol >= 0 ? String(row[schemeCodeCol] ?? '').trim() || undefined : undefined,
       isin: isinCol >= 0 ? String(row[isinCol] ?? '').trim() || undefined : undefined,
       units,
       averageCost,
-      investedAmount: investedAmount || (units > 0 ? units * averageCost : 0),
-      currentValue: currentValue || (units > 0 ? units * getNum(currentCol) : 0),
+      investedAmount: finalInvested,
+      currentValue: currentValue > 0 ? currentValue : (units > 0 && averageCost > 0 ? units * averageCost : 0),
     }
     holdings.push(holding)
   }
@@ -141,12 +153,12 @@ export function parseGrowwTransactions(content: ExtractedContent): GrowwTransact
     return headerLower.findIndex((h) => names.some((n) => h.includes(n)))
   }
 
-  const dateCol = findCol(['date', 'trade_date', 'transaction_date'])
-  const typeCol = findCol(['type', 'transaction_type', 'order_type'])
+  const dateCol = findCol(['date', 'trade_date', 'transaction_date', 'order_date'])
+  const typeCol = findCol(['type', 'transaction_type', 'order_type', 'transaction'])
   const nameCol = findCol(['scheme_name', 'scheme', 'fund_name', 'fund', 'name', 'description', 'instrument'])
-  const amountCol = findCol(['amount', 'net_amount', 'transaction_amount'])
-  const unitsCol = findCol(['units', 'quantity'])
-  const navCol = findCol(['nav', 'price', 'rate'])
+  const amountCol = findCol(['amount', 'net_amount', 'transaction_amount', 'invested_amount'])
+  const unitsCol = findCol(['units', 'quantity', 'qty'])
+  const navCol = findCol(['nav', 'price', 'rate', 'nav_price'])
   const isinCol = findCol(['isin'])
   const schemeCodeCol = findCol(['scheme_code', 'code', 'amfi_code'])
 

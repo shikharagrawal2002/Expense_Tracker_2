@@ -1,15 +1,17 @@
-import { Plus, LineChart, Trash2, TrendingUp, TrendingDown } from 'lucide-react'
+import { Plus, LineChart, Trash2, TrendingUp, TrendingDown, UploadCloud, RefreshCw, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
 import { formatCurrency, cn } from '@/lib/utils'
-import { useHoldings, useDeleteHolding, INVESTMENT_TYPE_META } from '@/features/investments/hooks'
+import { useHoldings, useDeleteHolding, useRefreshNav, INVESTMENT_TYPE_META } from '@/features/investments/hooks'
 import { HoldingFormDialog } from '@/features/investments/holding-form-dialog'
+import { GrowwImportDialog } from '@/features/investments/groww-import-dialog'
 
 export function InvestmentsPage() {
   const { data: holdings, isLoading, isError } = useHoldings()
   const deleteHolding = useDeleteHolding()
+  const refreshNav = useRefreshNav()
 
   const totalInvested = holdings?.reduce((sum, h) => sum + h.invested_amount, 0) ?? 0
   const totalCurrent = holdings?.reduce((sum, h) => sum + h.current_value, 0) ?? 0
@@ -20,14 +22,34 @@ export function InvestmentsPage() {
     <div className="max-w-[1000px] space-y-6">
       <div className="flex items-start justify-between">
         <h1 className="font-display text-2xl font-semibold">Investments</h1>
-        <HoldingFormDialog
-          trigger={
-            <Button size="sm">
-              <Plus className="h-4 w-4" />
-              Add holding
-            </Button>
-          }
-        />
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => refreshNav.mutate()}
+            disabled={refreshNav.isPending}
+            aria-label="Refresh NAV values"
+          >
+            {refreshNav.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh values
+          </Button>
+          <GrowwImportDialog
+            trigger={
+              <Button size="sm" variant="secondary">
+                <UploadCloud className="h-4 w-4" />
+                Import from Groww
+              </Button>
+            }
+          />
+          <HoldingFormDialog
+            trigger={
+              <Button size="sm">
+                <Plus className="h-4 w-4" />
+                Add holding
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {holdings && holdings.length > 0 && (

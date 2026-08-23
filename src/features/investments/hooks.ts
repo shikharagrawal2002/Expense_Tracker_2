@@ -1,6 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PieChart, CandlestickChart, Bitcoin, Coins, Landmark, ShieldCheck, Building2, HandCoins } from 'lucide-react'
-import { fetchHoldings, createHolding, deleteHolding, type NewHolding, type InvestmentType } from '@/features/investments/api'
+import {
+  fetchHoldings,
+  createHolding,
+  deleteHolding,
+  parsePortfolioFile,
+  refreshNavValues,
+  type NewHolding,
+  type InvestmentType,
+  type PortfolioReportType,
+} from '@/features/investments/api'
 
 const HOLDINGS_KEY = ['holdings'] as const
 
@@ -20,6 +29,27 @@ export function useDeleteHolding() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteHolding(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HOLDINGS_KEY }),
+  })
+}
+
+/** Uploads a Groww mutual-fund export to the parse-portfolio edge function,
+ *  which upserts holdings + transaction history, then refreshes the list. */
+export function useParsePortfolio() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (params: { file: File; reportType?: PortfolioReportType; password?: string }) =>
+      parsePortfolioFile(params),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HOLDINGS_KEY }),
+  })
+}
+
+/** Fetches the latest AMFI NAVs and updates the current_value of the user's
+ *  mutual-fund holdings in real-time, then refreshes the holdings list. */
+export function useRefreshNav() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => refreshNavValues(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: HOLDINGS_KEY }),
   })
 }

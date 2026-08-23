@@ -64,22 +64,22 @@ async function findHolding(
   userId: string,
   h: GrowwHolding,
 ): Promise<string | null> {
-  let query = supabase
-    .from('investment_holdings')
-    .select('id, isin, scheme_code, name')
-    .eq('user_id', userId)
-
   if (h.isin) {
-    const { data } = await query.eq('isin', h.isin).maybeSingle()
+    const { data } = await supabase
+      .from('investment_holdings')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('isin', h.isin)
+      .maybeSingle()
     if (data) return data.id
   }
   if (h.schemeCode) {
-    query = supabase
+    const { data } = await supabase
       .from('investment_holdings')
       .select('id')
       .eq('user_id', userId)
       .eq('scheme_code', h.schemeCode)
-    const { data } = await query.maybeSingle()
+      .maybeSingle()
     if (data) return data.id
   }
 
@@ -138,14 +138,14 @@ Deno.serve(async (req: Request) => {
 
     // Auto-detect report type from filename when not specified
     const lowerName = fileName.toLowerCase()
-    const reportType: ParsePortfolioRequest['reportType'] = body.reportType ??
+    const effectiveReportType: ParsePortfolioRequest['reportType'] = reportType ??
       (lowerName.includes('transaction')
         ? 'transactions'
         : lowerName.includes('capital')
           ? 'capital-gains'
           : 'holdings')
 
-    if (reportType === 'transactions' || reportType === 'capital-gains') {
+    if (effectiveReportType === 'transactions' || effectiveReportType === 'capital-gains') {
       const transactions = parseGrowwTransactions(content)
       let inserted = 0
       let updated = 0
@@ -204,10 +204,10 @@ Deno.serve(async (req: Request) => {
       }
 
       // Recompute holding aggregates (units, average_cost, invested, current)
-      await supabase.rpc('recalculate_holding_metrics', {})
+      await supabase.rpc('recalculate_holding_metrics', { p_user_id: userId })
 
       return jsonResponse({
-        reportType,
+        reportType: effectiveReportType,
         transactionsDetected: transactions.length,
         inserted,
         updated,
@@ -257,8 +257,11 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Recompute holding aggregates from the imported data
+    await supabase.rpc('recalculate_holding_metrics', { p_user_id: userId })
+
     return jsonResponse({
-      reportType: 'holdings',
+      reportType: effectiveReportType,
       holdingsDetected: holdings.length,
       matched,
       created,
