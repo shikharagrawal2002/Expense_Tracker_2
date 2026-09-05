@@ -4,11 +4,22 @@ import { decryptField, encryptField } from '@/lib/crypto/fields'
 
 async function encryptTxnRow(row: Record<string, unknown>): Promise<Record<string, unknown>> {
   const result = { ...row }
+  // Encrypt free-text fields best-effort: if the DEK is not unlocked (e.g. the
+  // user signed in before the encryption feature existed, or the vault hasn't
+  // been set up yet), fall back to storing plaintext so the save still works.
   if (typeof result.notes === 'string' && result.notes !== '') {
-    result.notes = (await encryptField(result.notes)) ?? result.notes
+    try {
+      result.notes = (await encryptField(result.notes)) ?? result.notes
+    } catch {
+      // Encryption unavailable — store plaintext rather than failing the save.
+    }
   }
   if (typeof result.location === 'string' && result.location !== '') {
-    result.location = (await encryptField(result.location)) ?? result.location
+    try {
+      result.location = (await encryptField(result.location)) ?? result.location
+    } catch {
+      // Encryption unavailable — store plaintext rather than failing the save.
+    }
   }
   return result
 }
@@ -90,7 +101,15 @@ export interface EditTransactionInput {
 }
 
 export async function editTransaction(input: EditTransactionInput): Promise<Transaction> {
-  const notes = input.notes ? (await encryptField(input.notes)) ?? input.notes : null
+  // Best-effort encryption: fall back to plaintext if DEK isn't unlocked.
+  let notes: string | null = null
+  if (input.notes) {
+    try {
+      notes = (await encryptField(input.notes)) ?? input.notes
+    } catch {
+      notes = input.notes
+    }
+  }
   // amount stays numeric — the edit_transaction RPC expects a numeric parameter.
   const { error } = await supabase.rpc('edit_transaction', {
     p_id: input.id,

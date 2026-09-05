@@ -48,13 +48,23 @@ const TYPE_TABS = [
   { value: 'transfer', label: 'Transfer' },
 ] as const
 
+/** Formats a Date as a local-time ISO string for datetime-local inputs. */
+function toLocalIsoString(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 const emptyDefaults = (): FormInput => ({
   type: 'expense',
   account_id: '',
   transfer_account_id: '',
   category_id: '',
   amount: undefined as unknown as number,
-  occurred_at: new Date().toISOString().slice(0, 16),
+  occurred_at: toLocalIsoString(new Date()),
   notes: '',
 })
 
@@ -64,7 +74,7 @@ const defaultsFromTransaction = (txn: Transaction): FormInput => ({
   transfer_account_id: txn.transfer_account_id ?? '',
   category_id: txn.category_id ?? '',
   amount: txn.amount,
-  occurred_at: new Date(txn.occurred_at).toISOString().slice(0, 16),
+  occurred_at: toLocalIsoString(new Date(txn.occurred_at)),
   notes: txn.notes ?? '',
 })
 

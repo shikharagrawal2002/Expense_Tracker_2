@@ -12,7 +12,11 @@ async function encryptAccountRow(row: Record<string, unknown>): Promise<Record<s
   for (const field of ENCRYPTED_FIELDS) {
     const value = result[field]
     if (typeof value === 'string' && value !== '') {
-      result[field] = (await encryptField(value)) ?? value
+      try {
+        result[field] = (await encryptField(value)) ?? value
+      } catch {
+        // Encryption unavailable — store plaintext rather than failing the save.
+      }
     }
   }
   return result
