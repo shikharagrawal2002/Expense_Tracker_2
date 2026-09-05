@@ -4,7 +4,7 @@
             "outputFile": "com.ledger.smsforwarder.app-mergeDebugResources-38:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\party\\.gradle\\caches\\9.0-milestone-1\\transforms\\8b78596945d728fec3f37b885aeefec1\\transformed\\appcompat-1.6.1\\res\\values-night-v8\\values-night-v8.xml",
+                    "source": "C:\\Users\\party\\.gradle\\caches\\transforms-3\\9756fab58daf3b55028a539310104216\\transformed\\appcompat-1.6.1\\res\\values-night-v8\\values-night-v8.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\party\\.gradle\\caches\\9.0-milestone-1\\transforms\\03ed09fe46173020d11380788fe6839a\\transformed\\material-1.11.0\\res\\values-night-v8\\values-night-v8.xml",
+                    "source": "C:\\Users\\party\\.gradle\\caches\\transforms-3\\3c6da16fc08c5e7b7caed394bbbfefaa\\transformed\\material-1.11.0\\res\\values-night-v8\\values-night-v8.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",

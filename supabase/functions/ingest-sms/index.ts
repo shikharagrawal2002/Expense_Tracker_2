@@ -11,6 +11,7 @@
 // The key is validated against the user's sms_api_key in their profile.
 
 import { corsHeaders, jsonResponse } from './lib/cors.ts'
+import { aiParseSms } from './lib/ai.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.110.0'
 
 // ---------------------------------------------------------------------------
@@ -24,13 +25,30 @@ interface ParsedSms {
   merchant: string | null
 }
 
+// Optional connector words between the amount and the transaction keyword.
+// Handles formats like "INR 12667.00 is paid", "Rs 500 has been debited",
+// "₹51.00 was spent" etc.
+const CONNECTOR = `(?:is\\s+|are\\s+|has\\s+|have\\s+|has\\s+been\\s+|have\\s+been\\s+|was\\s+|were\\s+)?`
+
 // UPI transaction patterns — amount BEFORE keyword (e.g. "Rs 500 debited from ...")
-const UPI_DEBIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:debited|deducted|paid)\s*(?:from|by|via|for)?\s*(.+?)(?:\.|$)/i
-const UPI_CREDIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|received|added)\s*(?:to|by|from|via)?\s*(.+?)(?:\.|$)/i
+const UPI_DEBIT_RE = new RegExp(
+  `(?:Rs\\.?|₹|INR)\\s?([\\d,]+\\.?\\d*)\\s*${CONNECTOR}(?:debited|deducted|paid)\\s*(?:from|by|via|for)?\\s*(.+?)(?:\\.|$)`,
+  'i',
+)
+const UPI_CREDIT_RE = new RegExp(
+  `(?:Rs\\.?|₹|INR)\\s?([\\d,]+\\.?\\d*)\\s*${CONNECTOR}(?:credited|received|added)\\s*(?:to|by|from|via)?\\s*(.+?)(?:\\.|$)`,
+  'i',
+)
 
 // Card transaction patterns — amount BEFORE keyword (e.g. "Rs 500 spent at ...")
-const CARD_DEBIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:spent|withdrawn|used|debited|purchase|txn)\s*(?:at|on|via)?\s*(.+?)(?:\.|$)/i
-const CARD_CREDIT_RE = /(?:Rs\.?|₹|INR)\s?([\d,]+\.?\d*)\s*(?:credited|refund|payment received|cashback)\s*(?:at|from|on|via)?\s*(.+?)(?:\.|$)/i
+const CARD_DEBIT_RE = new RegExp(
+  `(?:Rs\\.?|₹|INR)\\s?([\\d,]+\\.?\\d*)\\s*${CONNECTOR}(?:spent|withdrawn|used|debited|purchase|txn)\\s*(?:at|on|via)?\\s*(.+?)(?:\\.|$)`,
+  'i',
+)
+const CARD_CREDIT_RE = new RegExp(
+  `(?:Rs\\.?|₹|INR)\\s?([\\d,]+\\.?\\d*)\\s*${CONNECTOR}(?:credited|refund|payment received|cashback)\\s*(?:at|from|on|via)?\\s*(.+?)(?:\\.|$)`,
+  'i',
+)
 
 // Amount AFTER keyword patterns — Indian bank SMS format:
 //   "Your A/c XX8295 debited by Rs. 51.00 on 18/08/26"
@@ -59,10 +77,11 @@ const BANK_PATTERNS: Array<[RegExp, string]> = [
   [/(Yes\s*Bank|YESBANK)/i, 'Yes Bank'],
   [/(IndusInd\s*Bank|INDB)/i, 'IndusInd Bank'],
   [/(IDFC\s*First|IDFCB)/i, 'IDFC First Bank'],
-    [/(Paytm\s*Payments|PAYTM)/i, 'Paytm Payments Bank'],
-    // Fintech apps that send alerts as app notifications (forwarded by the
-    // Ledger SMS Forwarder's notification listener with senderPhone "APP:slice")
-    [/(slice)/i, 'Slice'],
+  [/(HSBC\s*Bank|HSBC)/i, 'HSBC Bank'],
+  [/(Paytm\s*Payments|PAYTM)/i, 'Paytm Payments Bank'],
+  // Fintech apps that send alerts as app notifications (forwarded by the
+  // Ledger SMS Forwarder's notification listener with senderPhone "APP:slice")
+  [/(slice)/i, 'Slice'],
 ]
 
 // Merchant/description extraction from common SMS patterns
@@ -195,6 +214,7 @@ function parseSmsText(text: string): ParsedSms {
     if (/debited|spent|paid|purchase|withdrawn|used/i.test(text)) type = 'debit'
     else if (/credited|received|refund|cashback|added/i.test(text)) type = 'credit'
     description = text.replace(AMOUNT_RE, '').trim().substring(0, 200)
+    merchant = extractMerchant(description, text)
     return { amount, type, description, merchant }
   }
 
@@ -206,6 +226,7 @@ function parseSmsText(text: string): ParsedSms {
     if (/debited|spent|paid|purchase|withdrawn|used/i.test(text)) type = 'debit'
     else if (/credited|received|refund|cashback|added/i.test(text)) type = 'credit'
     description = text.replace(DECIMAL_AMOUNT_RE, '').trim().substring(0, 200)
+    merchant = extractMerchant(description, text)
   }
 
   return { amount, type, description, merchant }
@@ -218,12 +239,17 @@ function parseAmount(raw: string): number | null {
 }
 
 function extractMerchant(detail: string, fullText: string): string | null {
-  // Check known merchant patterns
   for (const [pattern, name] of MERCHANT_PATTERNS) {
+    // Use the pattern as a regex; literal merchant names have no groups,
+    // capture-based patterns have $1/$2 replacements in their label.
     const match = fullText.match(pattern) || detail.match(pattern)
     if (match) {
-      const resolved = match[1] ? match[0] : name
-      return resolved
+      // If the label contains a replacement like "$1", substitute the
+      // capture group(s). Literal labels (e.g. "Swiggy") pass through untouched.
+      if (/\$\d+/.test(name)) {
+        return name.replace(/\$(\d+)/g, (_, idx) => match[Number(idx)] ?? '')
+      }
+      return name
     }
   }
   // If detail contains a VPA (UPI ID), return it as the merchant
@@ -292,9 +318,23 @@ Deno.serve(async (req: Request) => {
 
     const userId = userData.id
 
-    // Parse the SMS
-    const parsed = parseSmsText(rawText)
-    const bankName = detectBank(rawText)
+    // Parse the SMS — regex first, AI fallback if amount or type missing.
+    let parsed = parseSmsText(rawText)
+    let bankName = detectBank(rawText)
+
+    // Only call the AI fallback when the regex parser couldn't extract an
+    // amount or a debit/credit type. This keeps cost low and data exposure
+    // minimal — AI is only reached for unknown/novel SMS formats.
+    if (!parsed.amount || !parsed.type) {
+      const aiResult = await aiParseSms(rawText)
+      if (aiResult) {
+        if (!parsed.amount && aiResult.amount) parsed.amount = aiResult.amount
+        if (!parsed.type && aiResult.type) parsed.type = aiResult.type
+        if (!parsed.merchant && aiResult.merchant) parsed.merchant = aiResult.merchant
+        if (!parsed.description && aiResult.description) parsed.description = aiResult.description
+        if (!bankName && aiResult.bankName) bankName = aiResult.bankName
+      }
+    }
 
     // Try to find a matching account
     let accountId: string | null = null

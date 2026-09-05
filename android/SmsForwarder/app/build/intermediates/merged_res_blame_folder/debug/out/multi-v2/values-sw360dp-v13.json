@@ -4,7 +4,7 @@
             "outputFile": "com.ledger.smsforwarder.app-mergeDebugResources-38:/values-sw360dp-v13/values-sw360dp-v13.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\party\\.gradle\\caches\\9.0-milestone-1\\transforms\\594dd6bff1b90bfaedee98770f906f4b\\transformed\\preference-1.2.1\\res\\values-sw360dp-v13\\values-sw360dp-v13.xml",
+                    "source": "C:\\Users\\party\\.gradle\\caches\\transforms-3\\4badbda83a1a1adadbf8b400033af068\\transformed\\preference-1.2.1\\res\\values-sw360dp-v13\\values-sw360dp-v13.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
