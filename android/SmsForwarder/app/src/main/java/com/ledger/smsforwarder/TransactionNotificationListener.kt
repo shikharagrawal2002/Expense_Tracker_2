@@ -28,6 +28,10 @@ import java.util.concurrent.TimeUnit
  * Filtered notifications are forwarded to the same ingest-sms Edge Function
  * used by SmsReceiver, with senderPhone = "APP:<label>" so the web SMS
  * Tracking page shows them alongside SMS transactions.
+ *
+ * Debug: every notification's verdict is recorded in [NotificationLogStore]
+ * and viewable in DebugActivity. With "debug_all_apps" enabled, ALL apps'
+ * notifications are logged for 10 minutes so users can discover package IDs.
  */
 class TransactionNotificationListener : NotificationListenerService() {
 
@@ -42,33 +46,60 @@ class TransactionNotificationListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         val pkg = sbn.packageName ?: return
 
-        // Only watch user-configured fintech apps (default: Slice).
-        if (!isMonitoredPackage(pkg)) return
+        // Ensure legacy credentials / package-ID migration has run even if the
+        // main activity hasn't been opened since the app was updated.
+        SecretStore(this).migrateLegacySecrets()
 
-        val extras = sbn.notification?.extras ?: return
-        val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
-        val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
-        val bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: ""
-        val body = listOf(title, text, bigText).filter { it.isNotBlank() }.joinToString(" | ")
-        if (body.isBlank()) return
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val debugAllUntil = prefs.getLong("debug_all_apps_until", 0L)
+        val debugAllActive = System.currentTimeMillis() < debugAllUntil
+
+        val extras = sbn.notification?.extras
+        var title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
+        var text = extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
+        val bigText = extras?.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString() ?: ""
+        if (text.isBlank()) text = bigText
+        // Fallback for custom-layout notifications with empty extras.
+        if (title.isBlank() && text.isBlank()) {
+            title = sbn.notification?.tickerText?.toString() ?: ""
+        }
+        val body = listOf(title, text).filter { it.isNotBlank() }.joinToString(" | ")
+
+        // Not a monitored app — only record when debug-all is active.
+        if (!isMonitoredPackage(pkg)) {
+            if (debugAllActive && body.isNotBlank()) {
+                NotificationLogStore.add(pkg, title, text, "IGNORED: not in Monitored apps")
+            }
+            return
+        }
+
+        if (body.isBlank()) {
+            NotificationLogStore.add(pkg, "(no text)", "", "SKIPPED: notification had no readable text")
+            return
+        }
 
         // Skip OTP / verification messages
         if (OTP_KEYWORDS.any { body.lowercase().contains(it) }) {
             Log.d(TAG, "Skipping OTP-like notification from $pkg")
+            NotificationLogStore.add(pkg, title, text, "SKIPPED: looks like an OTP")
             return
         }
 
         // Require a monetary value + transaction keyword (same rules as SMS)
-        if (!hasAmount(body) || !hasTransactionKeyword(body)) {
-            Log.d(TAG, "Ignoring non-transaction notification from $pkg")
+        if (!hasAmount(body)) {
+            NotificationLogStore.add(pkg, title, text, "IGNORED: no monetary amount found")
+            return
+        }
+        if (!hasTransactionKeyword(body)) {
+            NotificationLogStore.add(pkg, title, text, "IGNORED: no transaction keyword found")
             return
         }
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         val apiKey = SecretStore(this).readSecret("api_key") ?: ""
         val serverUrl = SecretStore(this).readSecret("server_url") ?: ""
         if (apiKey.isBlank() || serverUrl.isBlank()) {
             Log.w(TAG, "Forwarder not configured - skipping notification")
+            NotificationLogStore.add(pkg, title, text, "SKIPPED: API key / server URL not configured")
             return
         }
 
@@ -76,6 +107,8 @@ class TransactionNotificationListener : NotificationListenerService() {
         val receivedAt = sbn.postTime
 
         Log.d(TAG, "Forwarding app notification from $pkg: ${body.take(80)}")
+        NotificationLogStore.add(pkg, title, text, "FORWARDED as APP:$label")
+
         scope.launch {
             forwardToServer(serverUrl, apiKey, "APP:$label", body, receivedAt)
         }
@@ -124,10 +157,12 @@ class TransactionNotificationListener : NotificationListenerService() {
                     NotificationHelper.showForwardedNotification(this, rawText)
                 } else {
                     Log.e(TAG, "Failed to forward notification: ${response.code}")
+                    NotificationLogStore.add(senderPhone.removePrefix("APP:"), "", "", "ERROR: server returned ${response.code}")
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error forwarding notification", e)
+            NotificationLogStore.add(senderPhone.removePrefix("APP:"), "", "", "ERROR: ${e.message}")
         }
     }
 
@@ -136,11 +171,11 @@ class TransactionNotificationListener : NotificationListenerService() {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
         /** Default monitored packages — Slice first; users can add more. */
-        const val DEFAULT_MONITORED_APPS = "com.sliceapp.android"
+        const val DEFAULT_MONITORED_APPS = "indwin.c3.shareapp"
 
         /** Friendly labels shown in the web review queue. */
         val APP_LABELS = mapOf(
-            "com.sliceapp.android" to "slice",
+            "indwin.c3.shareapp" to "slice",
         )
 
         private val AMOUNT_PREFIX_RE =

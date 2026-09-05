@@ -66,9 +66,10 @@ export async function encryptRow<T extends Record<string, unknown>>(
     const value = result[field]
     if (typeof value === 'string') {
       result[field] = (await encryptField(value)) as T[keyof T]
-    } else if (typeof value === 'number') {
-      result[field] = (await encryptNumberField(value)) as T[keyof T]
     }
+    // Numeric fields are NOT encrypted — they must remain numeric for
+    // SQL-side aggregation (recalculate_balances, get_balance_as_of, reports).
+    // Only free-text fields (name, notes, location, etc.) are E2E encrypted.
   }
   return result
 }

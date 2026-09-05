@@ -40,8 +40,11 @@ class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
 
-        // Secrets are read from Android Keystore-backed AES-GCM storage
+        // Secrets are read from Android Keystore-backed AES-GCM storage.
+        // Run the legacy-migration so credentials + package-ID default stay
+        // current even if the main activity hasn't been opened recently.
         val secretStore = SecretStore(context)
+        secretStore.migrateLegacySecrets()
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val apiKey = secretStore.readSecret("api_key") ?: ""
         val serverUrl = secretStore.readSecret("server_url") ?: ""

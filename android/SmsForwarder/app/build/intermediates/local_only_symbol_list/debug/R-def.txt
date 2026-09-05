@@ -3,10 +3,17 @@ local
 drawable bg_status_card
 drawable ic_launcher_background
 drawable ic_launcher_foreground
+id buttonGrantNotificationAccess
 id buttonOpenSettings
 id buttonRequestPermissions
+id buttonViewDebugLog
+id debugClear
+id debugGrantAccess
+id debugList
+id debugStatus
 id settings_container
 id textStatus
+layout activity_debug
 layout activity_main
 layout activity_settings
 mipmap ic_launcher

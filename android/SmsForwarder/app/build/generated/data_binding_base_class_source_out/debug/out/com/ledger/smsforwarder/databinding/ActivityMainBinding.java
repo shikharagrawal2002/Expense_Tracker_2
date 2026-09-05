@@ -21,19 +21,29 @@ public final class ActivityMainBinding implements ViewBinding {
   private final LinearLayout rootView;
 
   @NonNull
+  public final Button buttonGrantNotificationAccess;
+
+  @NonNull
   public final Button buttonOpenSettings;
 
   @NonNull
   public final Button buttonRequestPermissions;
 
   @NonNull
+  public final Button buttonViewDebugLog;
+
+  @NonNull
   public final TextView textStatus;
 
-  private ActivityMainBinding(@NonNull LinearLayout rootView, @NonNull Button buttonOpenSettings,
-      @NonNull Button buttonRequestPermissions, @NonNull TextView textStatus) {
+  private ActivityMainBinding(@NonNull LinearLayout rootView,
+      @NonNull Button buttonGrantNotificationAccess, @NonNull Button buttonOpenSettings,
+      @NonNull Button buttonRequestPermissions, @NonNull Button buttonViewDebugLog,
+      @NonNull TextView textStatus) {
     this.rootView = rootView;
+    this.buttonGrantNotificationAccess = buttonGrantNotificationAccess;
     this.buttonOpenSettings = buttonOpenSettings;
     this.buttonRequestPermissions = buttonRequestPermissions;
+    this.buttonViewDebugLog = buttonViewDebugLog;
     this.textStatus = textStatus;
   }
 
@@ -64,6 +74,12 @@ public final class ActivityMainBinding implements ViewBinding {
     // This is done to optimize the compiled bytecode for size and performance.
     int id;
     missingId: {
+      id = R.id.buttonGrantNotificationAccess;
+      Button buttonGrantNotificationAccess = ViewBindings.findChildViewById(rootView, id);
+      if (buttonGrantNotificationAccess == null) {
+        break missingId;
+      }
+
       id = R.id.buttonOpenSettings;
       Button buttonOpenSettings = ViewBindings.findChildViewById(rootView, id);
       if (buttonOpenSettings == null) {
@@ -76,14 +92,20 @@ public final class ActivityMainBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.buttonViewDebugLog;
+      Button buttonViewDebugLog = ViewBindings.findChildViewById(rootView, id);
+      if (buttonViewDebugLog == null) {
+        break missingId;
+      }
+
       id = R.id.textStatus;
       TextView textStatus = ViewBindings.findChildViewById(rootView, id);
       if (textStatus == null) {
         break missingId;
       }
 
-      return new ActivityMainBinding((LinearLayout) rootView, buttonOpenSettings,
-          buttonRequestPermissions, textStatus);
+      return new ActivityMainBinding((LinearLayout) rootView, buttonGrantNotificationAccess,
+          buttonOpenSettings, buttonRequestPermissions, buttonViewDebugLog, textStatus);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

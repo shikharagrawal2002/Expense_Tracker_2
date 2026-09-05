@@ -7,9 +7,6 @@ async function encryptTxnRow(row: Record<string, unknown>): Promise<Record<strin
   if (typeof result.notes === 'string' && result.notes !== '') {
     result.notes = (await encryptField(result.notes)) ?? result.notes
   }
-  if (typeof result.amount === 'number') {
-    result.amount = (await encryptField(String(result.amount))) ?? String(result.amount)
-  }
   if (typeof result.location === 'string' && result.location !== '') {
     result.location = (await encryptField(result.location)) ?? result.location
   }
@@ -20,14 +17,11 @@ async function decryptTxns(rows: Transaction[]): Promise<Transaction[]> {
   const decrypted: Transaction[] = []
   for (const row of rows) {
     const notes = row.notes ? await decryptField(row.notes) : row.notes
-    const amountStr = await decryptField(String(row.amount))
     const location = row.location ? await decryptField(row.location) : row.location
-    const amount = amountStr ? Number(amountStr) : row.amount
     decrypted.push({
       ...row,
       notes: notes ?? row.notes,
       location: location ?? row.location,
-      amount: Number.isNaN(amount) ? row.amount : amount,
     })
   }
   return decrypted
@@ -97,6 +91,7 @@ export interface EditTransactionInput {
 
 export async function editTransaction(input: EditTransactionInput): Promise<Transaction> {
   const notes = input.notes ? (await encryptField(input.notes)) ?? input.notes : null
+  // amount stays numeric — the edit_transaction RPC expects a numeric parameter.
   const { error } = await supabase.rpc('edit_transaction', {
     p_id: input.id,
     p_account_id: input.account_id,

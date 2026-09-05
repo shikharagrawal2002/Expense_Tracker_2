@@ -1,18 +1,18 @@
 import { supabase } from '@/lib/supabase/client'
 import type { Account, NewAccount } from '@/lib/supabase/types'
-import { decryptField, decryptNumberField, encryptField, encryptNumberField } from '@/lib/crypto/fields'
+import { decryptField, encryptField } from '@/lib/crypto/fields'
 
-// Sensitive fields encrypted end-to-end before they reach Supabase.
-const SENSITIVE_FIELDS = ['name', 'current_balance', 'opening_balance', 'credit_limit', 'interest_rate'] as const
+// Only free-text fields are E2E encrypted. Numeric fields (balances, limits,
+// rates) must remain plain NUMERIC so SQL-side aggregation (recalculate_balances,
+// get_balance_as_of, reports) works correctly.
+const ENCRYPTED_FIELDS = ['name'] as const
 
 async function encryptAccountRow(row: Record<string, unknown>): Promise<Record<string, unknown>> {
   const result = { ...row }
-  for (const field of SENSITIVE_FIELDS) {
+  for (const field of ENCRYPTED_FIELDS) {
     const value = result[field]
     if (typeof value === 'string' && value !== '') {
       result[field] = (await encryptField(value)) ?? value
-    } else if (typeof value === 'number') {
-      result[field] = (await encryptNumberField(value)) ?? String(value)
     }
   }
   return result
@@ -22,21 +22,9 @@ async function decryptAccounts(rows: Account[]): Promise<Account[]> {
   const decrypted: Account[] = []
   for (const row of rows) {
     const name = await decryptField(row.name)
-    const balance = await decryptNumberField(String(row.current_balance))
-    const opening = await decryptNumberField(String(row.opening_balance))
-    const creditLimit = row.credit_limit !== null && row.credit_limit !== undefined
-      ? (await decryptNumberField(String(row.credit_limit))) ?? row.credit_limit
-      : row.credit_limit
-    const interest = row.interest_rate !== null && row.interest_rate !== undefined
-      ? (await decryptNumberField(String(row.interest_rate))) ?? row.interest_rate
-      : row.interest_rate
     decrypted.push({
       ...row,
       name: name ?? row.name,
-      current_balance: balance ?? row.current_balance,
-      opening_balance: opening ?? row.opening_balance,
-      credit_limit: creditLimit,
-      interest_rate: interest,
     })
   }
   return decrypted

@@ -35,12 +35,19 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Upgrade any legacy plaintext credentials to Keystore-encrypted storage.
+        SecretStore(this).migrateLegacySecrets()
+
         binding.buttonRequestPermissions.setOnClickListener {
             requestSmsPermissions()
         }
 
         binding.buttonGrantNotificationAccess.setOnClickListener {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+
+        binding.buttonViewDebugLog.setOnClickListener {
+            DebugActivity.start(this)
         }
 
         binding.buttonOpenSettings.setOnClickListener {
@@ -56,9 +63,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatus() {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        val apiKey = prefs.getString("api_key", "") ?: ""
-        val serverUrl = prefs.getString("server_url", "") ?: ""
+        // Read through SecretStore — after migration, plaintext prefs are gone.
+        val secretStore = SecretStore(this)
+        val apiKey = secretStore.readSecret("api_key") ?: ""
+        val serverUrl = secretStore.readSecret("server_url") ?: ""
 
         val hasSmsPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED

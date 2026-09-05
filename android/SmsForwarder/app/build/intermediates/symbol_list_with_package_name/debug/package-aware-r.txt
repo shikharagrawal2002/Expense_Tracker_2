@@ -3160,9 +3160,11 @@ id beginning
 id blocking
 id bottom
 id bounce
+id buttonGrantNotificationAccess
 id buttonOpenSettings
 id buttonPanel
 id buttonRequestPermissions
+id buttonViewDebugLog
 id cancel_button
 id center
 id centerCrop
@@ -3194,6 +3196,10 @@ id custom
 id customPanel
 id cut
 id date_picker_actions
+id debugClear
+id debugGrantAccess
+id debugList
+id debugStatus
 id decelerate
 id decelerateAndComplete
 id decor_content_parent
@@ -3653,6 +3659,7 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
+layout activity_debug
 layout activity_main
 layout activity_settings
 layout custom_dialog

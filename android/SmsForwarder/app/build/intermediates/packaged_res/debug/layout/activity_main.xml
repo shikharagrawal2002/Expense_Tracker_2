@@ -54,6 +54,23 @@
         android:padding="12dp" />
 
     <Button
+        android:id="@+id/buttonGrantNotificationAccess"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Enable App Alerts (Slice)"
+        android:padding="12dp" />
+
+    <Button
+        android:id="@+id/buttonViewDebugLog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="View Notification Log"
+        android:backgroundTint="#6B7280"
+        android:padding="12dp" />
+
+    <Button
         android:id="@+id/buttonOpenSettings"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

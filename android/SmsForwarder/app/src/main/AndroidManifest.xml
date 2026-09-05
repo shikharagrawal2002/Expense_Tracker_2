@@ -33,6 +33,10 @@
             android:name=".SettingsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".DebugActivity"
+            android:exported="false" />
+
         <!-- SMS Receiver - listens for incoming SMS -->
         <receiver
             android:name=".SmsReceiver"

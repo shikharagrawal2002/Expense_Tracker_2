@@ -25,6 +25,33 @@
             android:defaultValue="true" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="App notifications">
+        <EditTextPreference
+            android:key="monitored_apps"
+            android:title="Monitored apps"
+            android:summary="Comma-separated package IDs of fintech apps whose transaction notifications should be forwarded (e.g. Slice). Default: indwin.c3.shareapp"
+            android:defaultValue="indwin.c3.shareapp"
+            android:persistent="true" />
+
+        <Preference
+            android:key="open_notification_access"
+            android:title="Grant notification access"
+            android:summary="Required to read transaction alerts from apps like Slice that don't send regular SMS. Opens Android's Notification access settings."
+            android:persistent="false" />
+
+        <Preference
+            android:key="debug_log_all_apps"
+            android:title="Debug: log ALL notifications (10 min)"
+            android:summary="Temporarily log every app's notifications so you can find an app's exact package ID. Check results in the Debug screen."
+            android:persistent="false" />
+
+        <Preference
+            android:key="open_debug_log"
+            android:title="Open notification debug log"
+            android:summary="See recent notifications the listener received and why each was forwarded or skipped."
+            android:persistent="false" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="About">
         <Preference
             android:key="about"

@@ -44,7 +44,7 @@
 26-->[androidx.core:core:1.12.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\5f2aa0165b2ab0df5ca7c40d78259b54\transformed\core-1.12.0\AndroidManifest.xml:26:22-94
 27
 28    <application
-28-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:14:5-55:19
+28-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:14:5-72:19
 29        android:allowBackup="true"
 29-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:15:9-35
 30        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
@@ -84,118 +84,147 @@
 48-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:33:13-45
 49            android:exported="false" />
 49-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:34:13-37
-50
-51        <!-- SMS Receiver - listens for incoming SMS -->
-52        <receiver
-52-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:37:9-44:20
-53            android:name="com.ledger.smsforwarder.SmsReceiver"
-53-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:38:13-40
-54            android:exported="true"
-54-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:39:13-36
-55            android:permission="android.permission.BROADCAST_SMS" >
-55-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:40:13-66
-56            <intent-filter android:priority="999" >
-56-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:41:13-43:29
-56-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:41:28-50
-57                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-57-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:42:17-82
-57-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:42:25-79
-58            </intent-filter>
-59        </receiver>
-60
-61        <!-- Boot receiver to re-register after reboot -->
-62        <receiver
-62-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:47:9-53:20
-63            android:name="com.ledger.smsforwarder.BootReceiver"
-63-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:48:13-41
-64            android:exported="true" >
-64-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:49:13-36
-65            <intent-filter>
-65-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:50:13-52:29
-66                <action android:name="android.intent.action.BOOT_COMPLETED" />
-66-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:51:17-79
-66-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:51:25-76
-67            </intent-filter>
-68        </receiver>
-69
-70        <provider
-70-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
-71            android:name="androidx.startup.InitializationProvider"
-71-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:25:13-67
-72            android:authorities="com.ledger.smsforwarder.androidx-startup"
-72-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:26:13-68
-73            android:exported="false" >
-73-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:27:13-37
-74            <meta-data
-74-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:29:13-31:52
-75                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-75-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:30:17-75
-76                android:value="androidx.startup" />
-76-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:31:17-49
-77            <meta-data
-77-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\15a13786ce6855ba59dcfac9d64a9e90\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
-78                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-78-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\15a13786ce6855ba59dcfac9d64a9e90\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
-79                android:value="androidx.startup" />
-79-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\15a13786ce6855ba59dcfac9d64a9e90\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
-80            <meta-data
-80-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
-81                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-81-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
-82                android:value="androidx.startup" />
-82-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
-83        </provider>
-84
-85        <uses-library
-85-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:25:9-27:40
-86            android:name="androidx.window.extensions"
-86-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:26:13-54
-87            android:required="false" />
-87-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:27:13-37
-88        <uses-library
-88-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:28:9-30:40
-89            android:name="androidx.window.sidecar"
-89-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:29:13-51
-90            android:required="false" />
-90-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:30:13-37
-91
-92        <receiver
-92-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
-93            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-93-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
-94            android:directBootAware="false"
-94-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
-95            android:enabled="true"
-95-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
-96            android:exported="true"
-96-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
-97            android:permission="android.permission.DUMP" >
-97-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
-98            <intent-filter>
-98-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
-99                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-99-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
-99-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
-100            </intent-filter>
-101            <intent-filter>
-101-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
-102                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-102-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
-102-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
-103            </intent-filter>
-104            <intent-filter>
-104-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
-105                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-105-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
-105-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
-106            </intent-filter>
-107            <intent-filter>
-107-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
-108                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-108-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
-108-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
-109            </intent-filter>
-110        </receiver>
-111    </application>
-112
-113</manifest>
+50        <activity
+50-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:36:9-38:40
+51            android:name="com.ledger.smsforwarder.DebugActivity"
+51-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:37:13-42
+52            android:exported="false" />
+52-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:38:13-37
+53
+54        <!-- SMS Receiver - listens for incoming SMS -->
+55        <receiver
+55-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:41:9-48:20
+56            android:name="com.ledger.smsforwarder.SmsReceiver"
+56-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:42:13-40
+57            android:exported="true"
+57-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:43:13-36
+58            android:permission="android.permission.BROADCAST_SMS" >
+58-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:44:13-66
+59            <intent-filter android:priority="999" >
+59-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:45:13-47:29
+59-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:45:28-50
+60                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+60-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:46:17-82
+60-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:46:25-79
+61            </intent-filter>
+62        </receiver>
+63
+64        <!-- Boot receiver to re-register after reboot -->
+65        <receiver
+65-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:51:9-57:20
+66            android:name="com.ledger.smsforwarder.BootReceiver"
+66-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:52:13-41
+67            android:exported="true" >
+67-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:53:13-36
+68            <intent-filter>
+68-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:54:13-56:29
+69                <action android:name="android.intent.action.BOOT_COMPLETED" />
+69-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:55:17-79
+69-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:55:25-76
+70            </intent-filter>
+71        </receiver>
+72
+73        <!--
+74             Notification listener: reads transaction alerts posted by fintech
+75             apps (e.g. Slice) that don't send regular bank SMS. Requires the
+76             user to grant "Notification access" in system settings.
+77        -->
+78        <service
+78-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:62:9-70:19
+79            android:name="com.ledger.smsforwarder.TransactionNotificationListener"
+79-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:63:13-60
+80            android:exported="false"
+80-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:64:13-37
+81            android:label="Ledger transaction alerts"
+81-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:65:13-54
+82            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" >
+82-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:66:13-87
+83            <intent-filter>
+83-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:67:13-69:29
+84                <action android:name="android.service.notification.NotificationListenerService" />
+84-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:68:17-99
+84-->C:\Users\party\Documents\GitHub\Expense_Tracker_2\android\SmsForwarder\app\src\main\AndroidManifest.xml:68:25-96
+85            </intent-filter>
+86        </service>
+87
+88        <provider
+88-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
+89            android:name="androidx.startup.InitializationProvider"
+89-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:25:13-67
+90            android:authorities="com.ledger.smsforwarder.androidx-startup"
+90-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:26:13-68
+91            android:exported="false" >
+91-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:27:13-37
+92            <meta-data
+92-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:29:13-31:52
+93                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+93-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:30:17-75
+94                android:value="androidx.startup" />
+94-->[androidx.emoji2:emoji2:1.2.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\ece5f7bca034abcf8ec469d6d9190e3a\transformed\emoji2-1.2.0\AndroidManifest.xml:31:17-49
+95            <meta-data
+95-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\15a13786ce6855ba59dcfac9d64a9e90\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:29:13-31:52
+96                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+96-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\15a13786ce6855ba59dcfac9d64a9e90\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:30:17-78
+97                android:value="androidx.startup" />
+97-->[androidx.lifecycle:lifecycle-process:2.7.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\15a13786ce6855ba59dcfac9d64a9e90\transformed\lifecycle-process-2.7.0\AndroidManifest.xml:31:17-49
+98            <meta-data
+98-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:29:13-31:52
+99                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+99-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:30:17-85
+100                android:value="androidx.startup" />
+100-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:31:17-49
+101        </provider>
+102
+103        <uses-library
+103-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:25:9-27:40
+104            android:name="androidx.window.extensions"
+104-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:26:13-54
+105            android:required="false" />
+105-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:27:13-37
+106        <uses-library
+106-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:28:9-30:40
+107            android:name="androidx.window.sidecar"
+107-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:29:13-51
+108            android:required="false" />
+108-->[androidx.window:window:1.0.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\93d0146b8f410c94a27a5d1c39a93f4f\transformed\window-1.0.0\AndroidManifest.xml:30:13-37
+109
+110        <receiver
+110-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:34:9-52:20
+111            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+111-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:35:13-76
+112            android:directBootAware="false"
+112-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:36:13-44
+113            android:enabled="true"
+113-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:37:13-35
+114            android:exported="true"
+114-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:38:13-36
+115            android:permission="android.permission.DUMP" >
+115-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:39:13-57
+116            <intent-filter>
+116-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:40:13-42:29
+117                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+117-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:17-91
+117-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:41:25-88
+118            </intent-filter>
+119            <intent-filter>
+119-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:43:13-45:29
+120                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+120-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:17-85
+120-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:44:25-82
+121            </intent-filter>
+122            <intent-filter>
+122-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:46:13-48:29
+123                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+123-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:17-88
+123-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:47:25-85
+124            </intent-filter>
+125            <intent-filter>
+125-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:49:13-51:29
+126                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+126-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:17-95
+126-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\party\.gradle\caches\9.0-milestone-1\transforms\a517b0cb44e5e188741e5da7e6ff9be9\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
+127            </intent-filter>
+128        </receiver>
+129    </application>
+130
+131</manifest>
