@@ -61,6 +61,17 @@ export async function deactivateRecurringRule(id: string): Promise<void> {
   if (error) throw error
 }
 
+export async function markBillPaid(ruleId: string, accountId: string, amount?: number, paidOn?: string): Promise<string> {
+  const { data, error } = await supabase.rpc('mark_bill_paid', {
+    p_rule_id: ruleId,
+    p_account_id: accountId,
+    p_amount: amount ?? null,
+    p_paid_on: paidOn ?? null,
+  })
+  if (error) throw error
+  return data as string
+}
+
 export function daysUntil(dateStr: string): number {
   const due = new Date(dateStr)
   const today = new Date()

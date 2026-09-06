@@ -1,8 +1,8 @@
-import { Trash2 } from 'lucide-react'
+import { Check, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/skeleton'
 import { formatCurrency } from '@/lib/utils'
 import { daysUntil, type RecurringRule } from '@/features/recurring/api'
-import { useDeactivateRecurringRule } from '@/features/recurring/hooks'
+import { useDeactivateRecurringRule, useMarkBillPaid } from '@/features/recurring/hooks'
 
 const FREQ_LABEL: Record<string, string> = {
   daily: 'Daily',
@@ -15,8 +15,13 @@ const FREQ_LABEL: Record<string, string> = {
 
 export function RecurringRow({ rule, kind }: { rule: RecurringRule; kind: 'subscription' | 'bill' }) {
   const deactivate = useDeactivateRecurringRule(kind)
+  const markPaid = useMarkBillPaid(kind)
   const days = daysUntil(rule.next_due_date)
   const urgent = days <= 3
+
+  const handleMarkPaid = () => {
+    markPaid.mutate({ ruleId: rule.id, accountId: rule.account_id })
+  }
 
   return (
     <div className="group flex items-center gap-3 rounded-lg px-2 py-2.5 -mx-2 hover:surface-2 transition-colors">
@@ -31,6 +36,17 @@ export function RecurringRow({ rule, kind }: { rule: RecurringRule; kind: 'subsc
       <Badge variant={urgent ? 'warning' : 'default'} className="shrink-0">
         {days <= 0 ? 'Due' : `${days}d`}
       </Badge>
+      {kind === 'bill' && (
+        <button
+          onClick={handleMarkPaid}
+          disabled={markPaid.isPending}
+          className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 hover:bg-[var(--color-positive-500)]/10 text-muted hover:text-[var(--color-positive-600)] transition-all shrink-0"
+          aria-label={`Mark ${rule.label} as paid`}
+          title="Mark as paid"
+        >
+          <Check className="h-3.5 w-3.5" />
+        </button>
+      )}
       <button
         onClick={() => deactivate.mutate(rule.id)}
         className="opacity-0 group-hover:opacity-100 rounded-lg p-1.5 hover:bg-[var(--color-negative-500)]/10 text-muted hover:text-[var(--color-negative-600)] transition-all shrink-0"

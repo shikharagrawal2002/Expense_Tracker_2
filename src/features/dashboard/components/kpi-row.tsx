@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, CreditCard, Activity, HandCoins } from 'lucide-react'
+import { CreditCard, HandCoins } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressRing } from '@/components/ui/progress-ring'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,19 +10,18 @@ export function KpiRow() {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {Array.from({ length: 5 }).map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-32 rounded-2xl" />
         ))}
       </div>
     )
   }
 
-  const { netWorth, currentMonthNet, savingsRate, creditUtilization, healthScore, owedToYou } = data
-  const isPositiveNet = currentMonthNet >= 0
+  const { creditUtilization, healthScore, owedToYou } = data
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {/* Financial health score — signature ring, larger emphasis */}
       <Card>
         <CardContent className="pt-5 flex items-center gap-4">
@@ -39,41 +38,6 @@ export function KpiRow() {
             <p className="text-sm mt-1 text-muted">
               {healthScore >= 70 ? 'Good shape' : healthScore >= 40 ? 'Room to improve' : 'Needs attention'}
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted">Net worth</p>
-            <div
-              className={cn(
-                'flex items-center gap-0.5 text-xs font-medium',
-                isPositiveNet ? 'text-[var(--color-positive-600)]' : 'text-[var(--color-negative-600)]',
-              )}
-            >
-              {isPositiveNet ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              {formatCompactCurrency(Math.abs(currentMonthNet))}
-            </div>
-          </div>
-          <p className="font-display text-2xl font-semibold mt-2 num">{formatCompactCurrency(netWorth)}</p>
-          <p className="text-xs text-muted mt-1">{isPositiveNet ? 'net gain' : 'net loss'} this month</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="pt-5">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted">Savings rate</p>
-            <Activity className="h-3.5 w-3.5 text-muted" />
-          </div>
-          <p className="font-display text-2xl font-semibold mt-2 num">{savingsRate}%</p>
-          <div className="h-1.5 rounded-full surface-2 mt-3 overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[var(--color-positive-500)]"
-              style={{ width: `${Math.min(100, Math.max(0, savingsRate))}%` }}
-            />
           </div>
         </CardContent>
       </Card>

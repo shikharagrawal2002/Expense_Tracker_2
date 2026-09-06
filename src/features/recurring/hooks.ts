@@ -3,6 +3,7 @@ import {
   fetchRecurringRules,
   createRecurringRule,
   deactivateRecurringRule,
+  markBillPaid,
   type NewRecurringRule,
 } from '@/features/recurring/api'
 
@@ -23,5 +24,17 @@ export function useDeactivateRecurringRule(filter: 'subscription' | 'bill') {
   return useMutation({
     mutationFn: (id: string) => deactivateRecurringRule(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recurring', filter] }),
+  })
+}
+
+export function useMarkBillPaid(filter: 'subscription' | 'bill') {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ ruleId, accountId, amount, paidOn }: { ruleId: string; accountId: string; amount?: number; paidOn?: string }) =>
+      markBillPaid(ruleId, accountId, amount, paidOn),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring', filter] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
   })
 }
