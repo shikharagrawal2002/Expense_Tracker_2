@@ -22,7 +22,9 @@ export function useDashboardKpis() {
   const isError = accountsQuery.isError || trendQuery.isError || owedQuery.isError
 
   const accounts = accountsQuery.data ?? []
-  const netWorth = accounts.reduce((sum, a) => sum + a.current_balance, 0)
+  // Exclude credit cards from net worth — they're liabilities tracked separately
+  const nonCreditAccounts = accounts.filter((a) => a.type !== 'credit_card')
+  const netWorth = nonCreditAccounts.reduce((sum, a) => sum + a.current_balance, 0)
 
   const creditCards = accounts.filter((a) => a.type === 'credit_card' && a.credit_limit)
   const totalCreditLimit = creditCards.reduce((sum, a) => sum + (a.credit_limit ?? 0), 0)

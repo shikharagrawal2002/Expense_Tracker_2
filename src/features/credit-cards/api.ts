@@ -67,16 +67,15 @@ export async function fetchCardStatementHistory(accountId: string): Promise<Card
   return data as CardStatement[]
 }
 
-/** Marks a card statement as paid (or unpaid), resets the card's credit limit balance, and stamps paid_at accordingly. */
+/** Marks a card statement as paid (or unpaid), resets the card's balance to 0, and stamps paid_at. */
 export async function setCardStatementPaid(id: string, isPaid: boolean): Promise<void> {
   const { error } = await supabase.rpc('set_card_statement_paid', {
     p_id: id,
     p_is_paid: isPaid,
   })
   if (error) throw error
-  // Recompute balances from the ledger — set_card_statement_paid() resets the
-  // card's current_balance to 0, but the ledger is the source of truth.
-  await recalculateBalances()
+  // The RPC handles the balance reset internally — do NOT call recalculateBalances()
+  // here, as it would recompute from transactions and overwrite the reset.
 }
 
 /** Recomputes every account's current_balance from the transaction ledger.

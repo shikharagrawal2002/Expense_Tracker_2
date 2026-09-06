@@ -11,7 +11,9 @@ export function AccountsPage() {
   const { data: accounts, isLoading, isError } = useAccounts()
   const recalculate = useRecalculateBalances()
 
-  const netWorth = accounts?.reduce((sum, a) => sum + a.current_balance, 0) ?? 0
+  // Filter out credit card accounts — they have their own dedicated page
+  const nonCreditAccounts = accounts?.filter((a) => a.type !== 'credit_card')
+  const netWorth = nonCreditAccounts?.reduce((sum, a) => sum + a.current_balance, 0) ?? 0
 
   return (
     <div className="max-w-[1400px] space-y-6">
@@ -63,19 +65,19 @@ export function AccountsPage() {
         </div>
       )}
 
-      {!isLoading && !isError && accounts?.length === 0 && (
+      {!isLoading && !isError && nonCreditAccounts?.length === 0 && (
         <div className="surface border border-hairline rounded-2xl">
           <EmptyState
             icon={Wallet}
             title="No accounts yet"
-            description="Add your first bank account, card, or wallet to start tracking transactions."
+            description="Add your first bank account, cash, or wallet to start tracking transactions."
           />
         </div>
       )}
 
-      {!isLoading && accounts && accounts.length > 0 && (
+      {!isLoading && nonCreditAccounts && nonCreditAccounts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {accounts.map((account) => (
+          {nonCreditAccounts.map((account) => (
             <AccountCard key={account.id} account={account} />
           ))}
         </div>
