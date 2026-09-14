@@ -3,7 +3,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Select } from '@/components/ui/select'
 import { EmptyState } from '@/components/shared/empty-state'
-import { formatCurrency } from '@/lib/utils'
+import { ChartTooltip } from '@/components/charts/chart-tooltip'
+import { CHART_PALETTE } from '@/lib/utils'
 import { useCategoryBreakdown } from '@/features/analytics/hooks'
 import { PieChart as PieChartIcon } from 'lucide-react'
 
@@ -43,21 +44,21 @@ export function CategoryBreakdownChart() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={slices} dataKey="total" nameKey="name" innerRadius={55} outerRadius={80} paddingAngle={2}>
-                    {slices.map((s) => (
-                      <Cell key={s.categoryId} fill={s.color} stroke="none" />
+                    {slices.map((s, i) => (
+                      <Cell key={s.categoryId} fill={s.color ?? CHART_PALETTE[i % CHART_PALETTE.length]} stroke="none" />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(value) => formatCurrency(Number(value))}
-                    contentStyle={{ background: 'var(--color-surface-dark)', border: '1px solid var(--color-border-dark)', borderRadius: 8, fontSize: 12 }}
-                  />
+                  <Tooltip content={<ChartTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
             <div className="flex-1 min-w-0 space-y-2 max-h-48 overflow-y-auto">
-              {slices.slice(0, 8).map((s) => (
+              {slices.slice(0, 8).map((s, i) => (
                 <div key={s.categoryId} className="flex items-center gap-2 text-sm">
-                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                  <span
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: s.color ?? CHART_PALETTE[i % CHART_PALETTE.length] }}
+                  />
                   <span className="flex-1 truncate">{s.name}</span>
                   <span className="num text-muted shrink-0">{total > 0 ? Math.round((s.total / total) * 100) : 0}%</span>
                 </div>

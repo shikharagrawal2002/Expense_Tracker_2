@@ -2,6 +2,7 @@ import { CreditCard, HandCoins } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressRing } from '@/components/ui/progress-ring'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CountUp } from '@/components/ui/count-up'
 import { formatCompactCurrency, cn } from '@/lib/utils'
 import { useDashboardKpis } from '@/features/dashboard/use-dashboard-data'
 
@@ -10,33 +11,46 @@ export function KpiRow() {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-32 rounded-2xl" />
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Skeleton className="h-36 rounded-2xl sm:col-span-2" />
+        <Skeleton className="h-36 rounded-2xl" />
+        <Skeleton className="h-36 rounded-2xl" />
       </div>
     )
   }
 
   const { creditUtilization, healthScore, owedToYou } = data
+  const scoreColor =
+    healthScore >= 70
+      ? 'var(--color-positive-500)'
+      : healthScore >= 40
+        ? 'var(--color-warning-500)'
+        : 'var(--color-negative-500)'
+  const scoreLabel = healthScore >= 70 ? 'Good shape' : healthScore >= 40 ? 'Room to improve' : 'Needs attention'
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {/* Financial health score — signature ring, larger emphasis */}
-      <Card>
-        <CardContent className="pt-5 flex items-center gap-4">
-          <ProgressRing
-            value={healthScore}
-            size={72}
-            strokeWidth={7}
-            color={healthScore >= 70 ? 'var(--color-positive-500)' : healthScore >= 40 ? 'var(--color-warning-500)' : 'var(--color-negative-500)'}
-          >
-            <span className="font-display text-lg font-semibold num">{healthScore}</span>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* HERO — financial health score, spans 2 columns, signature ring enlarged */}
+      <Card className="sm:col-span-2 relative overflow-hidden">
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.5] dark:opacity-[0.25]"
+          style={{
+            background:
+              'radial-gradient(120% 120% at 100% 0%, color-mix(in srgb, var(--color-brand-500) 12%, transparent), transparent 60%)',
+          }}
+        />
+        <CardContent className="pt-6 pb-6 flex items-center gap-6 relative">
+          <ProgressRing value={healthScore} size={104} strokeWidth={9} color={scoreColor}>
+            <div className="flex flex-col items-center leading-none">
+              <CountUp value={healthScore} className="font-display text-3xl font-semibold num" />
+              <span className="text-[10px] text-muted mt-1 uppercase tracking-wider">/ 100</span>
+            </div>
           </ProgressRing>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted">Health score</p>
-            <p className="text-sm mt-1 text-muted">
-              {healthScore >= 70 ? 'Good shape' : healthScore >= 40 ? 'Room to improve' : 'Needs attention'}
+            <p className="text-xs font-medium uppercase tracking-wider text-muted">Financial health</p>
+            <p className="font-display text-xl font-semibold mt-1">{scoreLabel}</p>
+            <p className="text-sm text-muted mt-1 max-w-[220px]">
+              A blend of your credit utilization and account health. Higher is better.
             </p>
           </div>
         </CardContent>
@@ -48,11 +62,13 @@ export function KpiRow() {
             <p className="text-xs font-medium uppercase tracking-wider text-muted">Credit utilization</p>
             <CreditCard className="h-3.5 w-3.5 text-muted" />
           </div>
-          <p className="font-display text-2xl font-semibold mt-2 num">{creditUtilization}%</p>
+          <p className="font-display text-2xl font-semibold mt-2 num">
+            <CountUp value={creditUtilization} format={(n) => `${Math.round(n)}%`} />
+          </p>
           <div className="h-1.5 rounded-full surface-2 mt-3 overflow-hidden">
             <div
               className={cn(
-                'h-full rounded-full',
+                'h-full rounded-full transition-[width] duration-700 ease-out',
                 creditUtilization < 30 ? 'bg-[var(--color-positive-500)]' : 'bg-[var(--color-warning-500)]',
               )}
               style={{ width: `${creditUtilization}%` }}
@@ -60,6 +76,7 @@ export function KpiRow() {
           </div>
         </CardContent>
       </Card>
+
       <Card>
         <CardContent className="pt-5">
           <div className="flex items-center justify-between">
@@ -69,10 +86,10 @@ export function KpiRow() {
           <p
             className={cn(
               'font-display text-2xl font-semibold mt-2 num',
-              owedToYou > 0 && 'text-[var(--color-positive-600)]',
+              owedToYou > 0 && 'text-[var(--color-positive-600)] dark:text-[var(--color-positive-dark)]',
             )}
           >
-            {formatCompactCurrency(owedToYou)}
+            <CountUp value={owedToYou} format={(n) => formatCompactCurrency(n)} />
           </p>
           <p className="text-xs text-muted mt-1">{owedToYou > 0 ? 'across pending splits' : 'all settled up'}</p>
         </CardContent>

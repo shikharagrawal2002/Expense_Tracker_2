@@ -16,37 +16,60 @@
   --font-display: "Space Grotesk", "Inter", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Brand / accent */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-300: #93c5fd;
-  --color-brand-500: #2563eb;
-  --color-brand-600: #1d4ed8;
-  --color-brand-700: #1e40af;
+  /* Brand / accent — amber: warm, restrained, "premium neutral" (Mercury/Ramp style).
+     Used sparingly, so it carries all the emphasis against neutral-slate surfaces. */
+  --color-brand-50: #fdf6e6;
+  --color-brand-100: #fbeccb;
+  --color-brand-300: #f4cf7a;
+  --color-brand-500: #f59e0b;
+  --color-brand-600: #e08c00;
+  --color-brand-700: #b26f00;
 
-  /* Semantic */
-  --color-positive-500: #4ade80;
-  --color-positive-600: #16a34a;
-  --color-negative-500: #fb7185;
-  --color-negative-600: #dc5b63;
-  --color-warning-500: #f59e0b;
-  --color-invest-500: #0891b2;
+  /* Semantic — income/expense stay green/red (users read these as meaning, not decor).
+     Warning shifts to orange-red so it stays distinct from the amber brand. */
+  --color-positive-500: #10b981;
+  --color-positive-600: #059669;
+  --color-negative-500: #f43f5e;
+  --color-negative-600: #e11d48;
+  --color-warning-500: #f97316;
+  --color-invest-500: #0ea5e9;
 
-  /* Light surface scale */
+  /* Categorical data-viz palette — evenly spaced hues, consistent S/L, so multi-series
+     charts look designed rather than random. Use in order for pie/stacked series. */
+  --color-chart-1: #f59e0b;
+  --color-chart-2: #0ea5e9;
+  --color-chart-3: #10b981;
+  --color-chart-4: #a855f7;
+  --color-chart-5: #f43f5e;
+  --color-chart-6: #6366f1;
+  --color-chart-7: #14b8a6;
+  --color-chart-8: #ec4899;
+
+  /* Light surface scale — warm neutral greys (no blue tint) */
   --color-surface-light: #ffffff;
-  --color-bg-light: #f5f7fb;
-  --color-surface-2-light: #eef2f7;
-  --color-border-light: #dfe5ed;
-  --color-text-light: #172033;
-  --color-text-muted-light: #657087;
+  --color-bg-light: #f7f7f5;
+  --color-surface-2-light: #efefec;
+  --color-popover-light: #ffffff;
+  --color-border-light: #e5e4e0;
+  --color-text-light: #17171a;
+  --color-text-muted-light: #71717a;
 
-  /* Dark surface scale */
-  --color-surface-dark: #101828;
-  --color-bg-dark: #0b1220;
-  --color-surface-2-dark: #162033;
-  --color-border-dark: #26344a;
-  --color-text-dark: #f4f7fb;
-  --color-text-muted-dark: #92a0b8;
+  /* Dark surface scale — neutral warm slate, progressive elevation: bg → surface → surface-2 → popover */
+  --color-surface-dark: #151518;
+  --color-bg-dark: #0a0a0c;
+  --color-surface-2-dark: #26262c;
+  --color-popover-dark: #2e2e35;
+  --color-border-dark: #2a2a30;
+  --color-text-dark: #f5f5f7;
+  --color-text-muted-dark: #8b8b95;
+
+  /* Dark-mode-tuned semantics (less vibration against dark surfaces) */
+  --color-positive-dark: #34d399;
+  --color-negative-dark: #fb7185;
+
+  /* Text/icon color that sits ON the brand fill. Amber needs a dark foreground
+     for readable contrast (white-on-amber fails WCAG AA). */
+  --color-on-brand: #1a1400;
 }
 
 @layer base {
@@ -62,6 +85,10 @@
   ::selection {
     background-color: var(--color-brand-100);
     color: var(--color-brand-700);
+  }
+  :where(.dark) ::selection {
+    background-color: color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+    color: var(--color-brand-100);
   }
   /* Tabular figures everywhere money appears */
   .num {
@@ -109,5 +136,46 @@
   color: var(--color-text-muted-light);
   &:where(.dark, .dark *) {
     color: var(--color-text-muted-dark);
+  }
+}
+
+/* Popover/modal surface — the highest elevation tier, floats above surface-2 */
+@utility surface-popover {
+  background-color: var(--color-popover-light);
+  &:where(.dark, .dark *) {
+    background-color: var(--color-popover-dark);
+  }
+}
+
+/* Layered card shadow: tight contact shadow + soft ambient shadow (Linear/Mercury style) */
+@utility shadow-card {
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 4px 12px rgba(16, 24, 40, 0.06);
+  &:where(.dark, .dark *) {
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 4px 16px rgba(0, 0, 0, 0.24);
+  }
+}
+
+@utility shadow-card-hover {
+  box-shadow:
+    0 2px 4px rgba(16, 24, 40, 0.06),
+    0 8px 24px rgba(16, 24, 40, 0.1);
+  &:where(.dark, .dark *) {
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.4),
+      0 12px 32px rgba(0, 0, 0, 0.32);
+  }
+}
+
+/* Interactive lift — for clickable cards */
+@utility lift {
+  transition:
+    transform 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  &:hover {
+    transform: translateY(-2px);
   }
 }

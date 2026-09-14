@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { formatCompactCurrency } from '@/lib/utils'
+import { ChartTooltip } from '@/components/charts/chart-tooltip'
 import { useMonthlyTrend } from '@/features/analytics/hooks'
 
 export function MonthlyTrendChart() {
@@ -23,10 +24,7 @@ export function MonthlyTrendChart() {
               tickFormatter={(v) => formatCompactCurrency(v)}
               width={56}
             />
-            <Tooltip
-              formatter={(value) => formatCompactCurrency(Number(value))}
-              contentStyle={{ background: 'var(--color-surface-dark)', border: '1px solid var(--color-border-dark)', borderRadius: 8, fontSize: 12 }}
-            />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--color-brand-500)', fillOpacity: 0.06 }} />
             <Bar dataKey="income" fill="var(--color-positive-500)" radius={[4, 4, 0, 0]} />
             <Bar dataKey="expense" fill="var(--color-negative-500)" radius={[4, 4, 0, 0]} />
           </BarChart>

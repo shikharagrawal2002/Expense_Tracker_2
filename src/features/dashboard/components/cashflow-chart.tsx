@@ -2,6 +2,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCompactCurrency } from '@/lib/utils'
+import { ChartTooltip } from '@/components/charts/chart-tooltip'
 import { useMonthlyTrend } from '@/features/analytics/hooks'
 
 export function CashflowChart() {
@@ -42,15 +43,7 @@ export function CashflowChart() {
                 tickFormatter={(v) => formatCompactCurrency(v)}
                 width={56}
               />
-              <Tooltip
-                formatter={(value) => formatCompactCurrency(Number(value))}
-                contentStyle={{
-                  background: 'var(--color-surface-dark)',
-                  border: '1px solid var(--color-border-dark)',
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--color-border-dark)', strokeOpacity: 0.4 }} />
               <Area type="monotone" dataKey="income" stroke="var(--color-positive-500)" fill="url(#incomeGrad)" strokeWidth={2} />
               <Area type="monotone" dataKey="expense" stroke="var(--color-negative-500)" fill="url(#expenseGrad)" strokeWidth={2} />
             </AreaChart>

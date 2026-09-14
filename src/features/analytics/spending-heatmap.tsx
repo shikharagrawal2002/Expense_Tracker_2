@@ -79,7 +79,7 @@ export function SpendingHeatmap() {
                 className={cn(
                   'aspect-square rounded-md flex items-center justify-center text-[11px] font-medium',
                   intensityColor[level],
-                  level >= 3 ? 'text-white' : 'text-muted',
+                  level >= 3 ? 'text-[var(--color-on-brand)]' : 'text-muted',
                 )}
               >
                 {day}

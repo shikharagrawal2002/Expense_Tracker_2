@@ -50,7 +50,7 @@ export function Topbar() {
         </Button>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button className="h-9 w-9 rounded-full bg-[var(--color-brand-600)] flex items-center justify-center text-white text-xs font-semibold ml-1 shadow-sm shadow-[var(--color-brand-600)]/25">
+            <button className="h-9 w-9 rounded-full bg-[var(--color-brand-600)] flex items-center justify-center text-[var(--color-on-brand)] text-xs font-semibold ml-1 shadow-sm shadow-[var(--color-brand-600)]/25">
               {initial}
             </button>
           </DropdownMenu.Trigger>

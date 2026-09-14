@@ -21,3 +21,16 @@ export function formatCompactCurrency(amount: number, currency = 'INR') {
     maximumFractionDigits: 1,
   }).format(amount)
 }
+
+/** Harmonious categorical palette (mirrors --color-chart-* tokens) for charts
+ *  with many series, so adjacent slices/bars are always visually distinct. */
+export const CHART_PALETTE = [
+  '#f59e0b',
+  '#0ea5e9',
+  '#10b981',
+  '#a855f7',
+  '#f43f5e',
+  '#6366f1',
+  '#14b8a6',
+  '#ec4899',
+]

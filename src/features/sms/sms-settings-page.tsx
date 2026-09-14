@@ -59,7 +59,7 @@ export function SmsSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-500)] text-white text-xs font-bold">1</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-500)] text-[var(--color-on-brand)] text-xs font-bold">1</span>
             Generate your API key
           </CardTitle>
         </CardHeader>
@@ -108,7 +108,7 @@ export function SmsSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-500)] text-white text-xs font-bold">2</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-500)] text-[var(--color-on-brand)] text-xs font-bold">2</span>
             Install the Android app
           </CardTitle>
         </CardHeader>
@@ -138,7 +138,7 @@ export function SmsSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-500)] text-white text-xs font-bold">3</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-brand-500)] text-[var(--color-on-brand)] text-xs font-bold">3</span>
             Known SMS senders
           </CardTitle>
         </CardHeader>

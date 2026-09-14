@@ -1,11 +1,17 @@
 import type { HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  /** Adds hover lift + stronger shadow; use for cards that navigate or open something. */
+  interactive?: boolean
+}
+
+export function Card({ className, interactive, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'surface border border-hairline rounded-xl shadow-sm shadow-slate-900/[0.04] dark:shadow-black/20',
+        'surface border border-hairline rounded-2xl shadow-card',
+        interactive && 'lift hover:shadow-card-hover cursor-pointer',
         className,
       )}
       {...props}
