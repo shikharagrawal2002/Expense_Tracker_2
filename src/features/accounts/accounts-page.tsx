@@ -16,25 +16,26 @@ export function AccountsPage() {
   const netWorth = nonCreditAccounts?.reduce((sum, a) => sum + a.current_balance, 0) ?? 0
 
   return (
-    <div className="max-w-[1400px] space-y-6">
-      <div className="flex items-start justify-between">
+    <div className="max-w-[1400px] space-y-5 sm:space-y-6">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">Accounts</h1>
+          <h1 className="font-display text-xl sm:text-2xl font-semibold">Accounts</h1>
           {!isLoading && accounts && accounts.length > 0 && (
             <p className="text-sm text-muted mt-0.5 num">
               Net worth across accounts: <span className="font-medium">{formatCurrency(netWorth)}</span>
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             size="sm"
             variant="outline"
             onClick={() => recalculate.mutate()}
             disabled={recalculate.isPending}
+            className="hidden sm:flex"
           >
             <RefreshCw className={`h-4 w-4 ${recalculate.isPending ? 'animate-spin' : ''}`} />
-            Recalculate balances
+            Recalculate
           </Button>
           <AccountFormDialog
             trigger={

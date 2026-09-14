@@ -20,7 +20,7 @@ export function Topbar() {
   const initial = (user?.user_metadata?.full_name?.[0] ?? user?.email?.[0] ?? '?').toUpperCase()
 
   return (
-    <header className="h-16 shrink-0 border-b border-hairline surface flex items-center gap-3 px-4 lg:px-8">
+    <header className="h-14 sm:h-16 shrink-0 border-b border-hairline surface flex items-center gap-2 px-3 sm:px-4 lg:px-8">
       <div className="relative flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
         <input
@@ -32,16 +32,16 @@ export function Topbar() {
           )}
         />
       </div>
-      <div className="flex items-center gap-1.5 ml-auto">
+      <div className="flex items-center gap-1 ml-auto">
         <TransactionFormDialog
           trigger={
-            <Button size="sm" className="hidden sm:inline-flex">
+            <Button size="sm" className="hidden sm:inline-flex h-8">
               <Plus className="h-4 w-4" />
               Add transaction
             </Button>
           }
         />
-        <Button variant="ghost" size="icon" onClick={cycleTheme} aria-label="Toggle theme">
+        <Button variant="ghost" size="icon" onClick={cycleTheme} aria-label="Toggle theme" className="sm:hidden">
           <ThemeIcon className="h-4 w-4" />
         </Button>
         <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
@@ -50,7 +50,7 @@ export function Topbar() {
         </Button>
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <button className="h-9 w-9 rounded-full bg-[var(--color-brand-600)] flex items-center justify-center text-[var(--color-on-brand)] text-xs font-semibold ml-1 shadow-sm shadow-[var(--color-brand-600)]/25">
+            <button className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-[var(--color-brand-600)] flex items-center justify-center text-[var(--color-on-brand)] text-xs font-semibold ml-1 shadow-sm shadow-[var(--color-brand-600)]/25">
               {initial}
             </button>
           </DropdownMenu.Trigger>

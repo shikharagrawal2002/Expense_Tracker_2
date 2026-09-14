@@ -15,6 +15,9 @@ import {
   FileDown,
   CreditCard,
   Wallet,
+  Settings,
+  BarChart3,
+  ArrowLeftRight,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -22,6 +25,7 @@ import { cn } from '@/lib/utils'
 /** All secondary destinations shown in the bottom-sheet "More" popup. These are
  *  the routes that don't fit on the always-visible 5-item mobile footer. */
 const SHEET_ITEMS: Array<{ to: string; label: string; icon: LucideIcon }> = [
+  { to: '/transactions', label: 'All transactions', icon: ArrowLeftRight },
   { to: '/imports?kind=card', label: 'Upload card statement', icon: CreditCard },
   { to: '/imports', label: 'Upload bank statement', icon: UploadCloud },
   { to: '/credit-cards', label: 'Credit cards', icon: Wallet },
@@ -49,7 +53,11 @@ const SHEET_SECTIONS: Array<{ label: string; items: Array<{ to: string; label: s
   },
   {
     label: 'System',
-    items: [{ to: '/reports', label: 'Reports', icon: FileDown }],
+    items: [
+      { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+      { to: '/reports', label: 'Reports', icon: FileDown },
+      { to: '/settings', label: 'Settings', icon: Settings },
+    ],
   },
 ]
 

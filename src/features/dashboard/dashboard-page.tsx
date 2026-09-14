@@ -19,9 +19,9 @@ export function DashboardPage() {
   const firstName = (user?.user_metadata?.full_name as string | undefined)?.split(' ')[0] ?? user?.email?.split('@')[0]
 
   return (
-    <div className="space-y-5 max-w-[1400px]">
-      <div>
-        <h1 className="font-display text-2xl font-semibold">
+    <div className="space-y-4 sm:space-y-5 max-w-[1400px]">
+      <div className="pb-1">
+        <h1 className="font-display text-xl sm:text-2xl font-semibold">
           {timeOfDayGreeting()}{firstName ? `, ${firstName}` : ''}
         </h1>
         <p className="text-sm text-muted mt-0.5">Here's where your money stands today.</p>
@@ -29,12 +29,12 @@ export function DashboardPage() {
 
       <KpiRow />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <div className="xl:col-span-2 space-y-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="xl:col-span-2 space-y-4 sm:space-y-5">
           <CashflowChart />
           <RecentActivityList />
         </div>
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-5">
           <AiInsightsPanel />
           <BudgetStatusList />
           <UpcomingBillsCard />
