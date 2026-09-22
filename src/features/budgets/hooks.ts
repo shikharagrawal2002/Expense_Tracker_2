@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchBudgets, fetchSpendByCategory, createBudget, deleteBudget, type NewBudget } from '@/features/budgets/api'
+import { fetchBudgets, fetchSpendByCategory, createBudget, updateBudget, deleteBudget, type BudgetUpdate, type NewBudget } from '@/features/budgets/api'
 
 export function useBudgetsWithSpend(periodMonth: string) {
   const budgetsQuery = useQuery({
@@ -30,6 +30,17 @@ export function useCreateBudget() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['budgets', variables.period_month] })
     },
+  })
+}
+
+/** Edits an existing budget in place - used by the pencil button on each
+ *  budget card so a limit can be tuned without deleting and recreating it. */
+export function useUpdateBudget() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...patch }: { id: string } & BudgetUpdate) =>
+      updateBudget(id, patch),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budgets'] }),
   })
 }
 

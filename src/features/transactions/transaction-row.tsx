@@ -1,4 +1,5 @@
-import { Trash2, Pencil, ArrowRight, ArrowLeftRight, Users } from 'lucide-react'
+import { useState } from 'react'
+import { Trash2, Pencil, ArrowRight, ArrowLeftRight, Users, ChevronDown } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/skeleton'
 import { useDeleteTransaction } from '@/features/transactions/hooks'
@@ -21,8 +22,13 @@ interface TransactionRowProps {
   splitButtonTypes?: Array<Transaction['type']>
 }
 
+/** Shared styling for the icon-only action buttons in the mobile panel. */
+const actionButtonClass =
+  'flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:text-inherit hover:surface transition-colors'
+
 export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expense'] }: TransactionRowProps) {
   const deleteTransaction = useDeleteTransaction()
+  const [expanded, setExpanded] = useState(false)
   const color = txn.category?.color ?? '#94a3b8'
 
   let signedAmount = txn.amount
@@ -50,105 +56,140 @@ export function TransactionRow({ txn, viewAccountId, splitButtonTypes = ['expens
 
   const isSourceView = txn.type === 'transfer' && viewAccountId && txn.account_id === viewAccountId
   const isDestinationView = txn.type === 'transfer' && viewAccountId && txn.transfer_account_id === viewAccountId
+  const canSplit = splitButtonTypes.includes(txn.type)
+
+  const splitButton = (
+    <SplitFormDialog
+      presetTransaction={txn}
+      trigger={
+        <button className={actionButtonClass} aria-label="Split this transaction" title="Split this transaction">
+          <Users className="h-4 w-4" />
+        </button>
+      }
+    />
+  )
+
+  const editButton = (
+    <TransactionFormDialog
+      transaction={txn}
+      trigger={
+        <button className={actionButtonClass} aria-label="Edit transaction" title="Edit transaction">
+          <Pencil className="h-4 w-4" />
+        </button>
+      }
+    />
+  )
+
+  const deleteButton = (
+    <button
+      onClick={() => deleteTransaction.mutate(txn.id)}
+      className={cn(actionButtonClass, 'hover:bg-[var(--color-negative-500)]/10 hover:text-[var(--color-negative-600)]')}
+      aria-label="Delete transaction"
+      title="Delete transaction"
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
+  )
 
   return (
-    <div className="group flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-lg px-2 py-2.5 -mx-2 hover:surface-2 transition-colors">
-      <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center" style={{ backgroundColor: `${color}26` }}>
-        {txn.type === 'transfer' ? (
-          <ArrowLeftRight className="h-3.5 w-3.5" style={{ color }} />
-        ) : (
-          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{txn.category?.name ?? (txn.type === 'transfer' ? 'Transfer' : 'Uncategorized')}</p>
-        <p className="min-w-0 overflow-clip text-ellipsis whitespace-nowrap text-xs text-muted hidden sm:block max-w-[60%]">
-          {txn.type === 'transfer' && isSourceView ? (
-            <span className="whitespace-normal">To {txn.transfer_account?.name ?? 'Unknown'} · {subtitleDate}</span>
-          ) : txn.type === 'transfer' && isDestinationView ? (
-            <span className="whitespace-normal">From {txn.account?.name ?? 'Unknown'} · {subtitleDate}</span>
-          ) : txn.type === 'transfer' ? (
-            <>
-              <span className="whitespace-normal">{txn.account?.name ?? 'Unknown'}</span>
-              <ArrowRight className="h-3 w-3 shrink-0" />
-              <span className="whitespace-normal">{txn.transfer_account?.name ?? 'Unknown'}</span>
-              <span>· {subtitleDate}</span>
-            </>
+    /* Column layout: the transaction line sits on top and the mobile action bar
+       opens *below* it, so tapping the arrow grows the card downwards instead of
+       squeezing another row of controls in sideways. */
+    <div className="group w-full min-w-0 overflow-hidden rounded-lg -mx-2 hover:surface-2 transition-colors">
+      {/* The transaction line itself. */}
+      <div className="flex items-center gap-3 px-2 py-2.5">
+        <div className="h-8 w-8 rounded-full shrink-0 flex items-center justify-center" style={{ backgroundColor: `${color}26` }}>
+          {txn.type === 'transfer' ? (
+            <ArrowLeftRight className="h-3.5 w-3.5" style={{ color }} />
           ) : (
-            <span className="whitespace-nowrap">
-              {txn.account?.name} · {subtitleDate}
-              {txn.notes ? ` · ${txn.notes}` : ''}
-            </span>
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
           )}
-        </p>
-        <p className="text-xs text-muted sm:hidden">
-          {subtitleDate}
-        </p>
-      </div>
-      {txn.split_status && (
-        <Badge variant={txn.split_status === 'open' ? 'default' : 'warning'} className="shrink-0 hidden sm:flex">
-          <Users className="h-3 w-3" />
-          {txn.split_status === 'open' ? 'Open' : 'Closed'}
-        </Badge>
-      )}
-      <p className={cn('max-w-[42%] truncate text-right text-sm font-medium num shrink-0', amountColorClass)}>
-        {signedAmount > 0 ? '+' : ''}
-        {formatCurrency(signedAmount, txn.currency)}
-      </p>
-      <div className="hidden sm:flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-        {splitButtonTypes.includes(txn.type) && (
-          <SplitFormDialog
-            presetTransaction={txn}
-            trigger={
-              <button
-                className="rounded-lg p-1.5 hover:surface text-muted hover:text-inherit transition-colors"
-                aria-label="Add to split"
-                title="Split this expense"
-              >
-                <Users className="h-3.5 w-3.5" />
-              </button>
-            }
-          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">
+            {txn.category?.name ?? (txn.type === 'transfer' ? 'Transfer' : 'Uncategorized')}
+          </p>
+
+          {/* Desktop/tablet subtitle: account + date (+ note) on one line. */}
+          <p className="min-w-0 overflow-clip text-ellipsis whitespace-nowrap text-xs text-muted hidden sm:block max-w-[60%]">
+            {txn.type === 'transfer' && isSourceView ? (
+              <span className="whitespace-normal">To {txn.transfer_account?.name ?? 'Unknown'} · {subtitleDate}</span>
+            ) : txn.type === 'transfer' && isDestinationView ? (
+              <span className="whitespace-normal">From {txn.account?.name ?? 'Unknown'} · {subtitleDate}</span>
+            ) : txn.type === 'transfer' ? (
+              <>
+                <span className="whitespace-normal">{txn.account?.name ?? 'Unknown'}</span>
+                <ArrowRight className="h-3 w-3 shrink-0" />
+                <span className="whitespace-normal">{txn.transfer_account?.name ?? 'Unknown'}</span>
+                <span>· {subtitleDate}</span>
+              </>
+            ) : (
+              <span className="whitespace-nowrap">
+                {txn.account?.name} · {subtitleDate}
+                {txn.notes ? ` · ${txn.notes}` : ''}
+              </span>
+            )}
+          </p>
+
+          {/* Mobile subtitle: the note/payee is the most useful second line, and
+              falls back to the date when there's nothing to show. */}
+          <p className="text-xs text-muted truncate sm:hidden">
+            {txn.notes || subtitleDate}
+          </p>
+        </div>
+
+        {txn.split_status && (
+          <>
+            <Badge
+              variant={txn.split_status === 'open' ? 'default' : 'warning'}
+              className="shrink-0 hidden sm:flex"
+            >
+              <Users className="h-3 w-3" />
+              {txn.split_status === 'open' ? 'Open' : 'Closed'}
+            </Badge>
+            {/* On phones a full badge would crowd the row — a tiny icon marks it. */}
+            <Users
+              className={cn(
+                'h-3.5 w-3.5 shrink-0 sm:hidden',
+                txn.split_status === 'open' ? 'text-[var(--color-brand-500)]' : 'text-muted',
+              )}
+              aria-label={txn.split_status === 'open' ? 'Split open' : 'Split closed'}
+            />
+          </>
         )}
-        <TransactionFormDialog
-          transaction={txn}
-          trigger={
-            <button
-              className="rounded-lg p-1.5 hover:surface text-muted hover:text-inherit transition-colors"
-              aria-label="Edit transaction"
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          }
-        />
+
+        <p className={cn('text-right text-sm font-medium num shrink-0', amountColorClass)}>
+          {signedAmount > 0 ? '+' : ''}
+          {formatCurrency(signedAmount, txn.currency)}
+        </p>
+
+        {/* Desktop/tablet: actions revealed on hover, as before. */}
+        <div className="hidden sm:flex items-center opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {canSplit && splitButton}
+          {editButton}
+          {deleteButton}
+        </div>
+
+        {/* Mobile: arrow-only toggle — no text, and it rotates as it opens. */}
         <button
-          onClick={() => deleteTransaction.mutate(txn.id)}
-          className="rounded-lg p-1.5 hover:bg-[var(--color-negative-500)]/10 text-muted hover:text-[var(--color-negative-600)] transition-colors"
-          aria-label="Delete transaction"
+          onClick={() => setExpanded((v) => !v)}
+          className="sm:hidden shrink-0 flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:text-inherit hover:surface transition-colors"
+          aria-expanded={expanded}
+          aria-label={expanded ? 'Hide transaction actions' : 'Show transaction actions'}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <ChevronDown className={cn('h-4 w-4 transition-transform duration-200', expanded && 'rotate-180')} />
         </button>
       </div>
-      <div className="flex sm:hidden items-center shrink-0">
-        <TransactionFormDialog
-          transaction={txn}
-          trigger={
-            <button
-              className="rounded-lg p-1.5 hover:surface text-muted hover:text-inherit transition-colors"
-              aria-label="Edit transaction"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-          }
-        />
-        <button
-          onClick={() => deleteTransaction.mutate(txn.id)}
-          className="rounded-lg p-1.5 hover:bg-[var(--color-negative-500)]/10 text-muted hover:text-[var(--color-negative-600)] transition-colors"
-          aria-label="Delete transaction"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
+
+      {/* Mobile: the action bar, icon-only, expanding the card downwards. */}
+      {expanded && (
+        <div className="sm:hidden flex items-center justify-end gap-1.5 border-t border-hairline px-2 py-1.5 animate-in slide-in-from-top-1 fade-in duration-200">
+          {canSplit && splitButton}
+          {editButton}
+          {deleteButton}
+        </div>
+      )}
     </div>
   )
 }

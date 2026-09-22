@@ -1,20 +1,60 @@
+import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { PieChart, CandlestickChart, Bitcoin, Coins, Landmark, ShieldCheck, Building2, HandCoins } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 import {
   fetchHoldings,
   createHolding,
+  updateHolding,
   deleteHolding,
+    fetchHoldingTransactions,
+  fetchAllInvestmentTransactions,
+  fetchPortfolioHistory,
   parsePortfolioFile,
   refreshNavValues,
+    type HoldingUpdate,
   type NewHolding,
+  type HoldingTransaction,
   type InvestmentType,
   type PortfolioReportType,
 } from '@/features/investments/api'
 
 const HOLDINGS_KEY = ['holdings'] as const
 
+/** Auto-refresh cadence (ms) so NAV/price changes show up without a manual tap. */
+export const HOLDINGS_REFETCH_MS = 60_000
+
 export function useHoldings() {
-  return useQuery({ queryKey: HOLDINGS_KEY, queryFn: fetchHoldings })
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
+    queryKey: HOLDINGS_KEY,
+    queryFn: fetchHoldings,
+    refetchInterval: HOLDINGS_REFETCH_MS,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+  })
+
+  // True real-time: any write to the user's holdings (this device, another
+  // device, or the refresh-nav edge function) pushes the list back in sync.
+  useEffect(() => {
+    const channel = supabase
+      .channel('investment_holdings_live')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'investment_holdings' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: HOLDINGS_KEY })
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [queryClient])
+
+  return query
 }
 
 export function useCreateHolding() {
@@ -25,11 +65,58 @@ export function useCreateHolding() {
   })
 }
 
+/** Edits a holding in place — used when you want to correct units or bump the
+ *  current value between NAV refreshes. */
+export function useUpdateHolding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...patch }: { id: string } & HoldingUpdate) => updateHolding(id, patch),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: HOLDINGS_KEY }),
+  })
+}
+
 export function useDeleteHolding() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => deleteHolding(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: HOLDINGS_KEY }),
+  })
+}
+
+/** Buy/SIP/redemption history for one holding — feeds the XIRR cashflow series. */
+export function useHoldingTransactions(holdingId: string | null) {
+  return useQuery({
+    queryKey: ['holding-transactions', holdingId],
+    queryFn: () => fetchHoldingTransactions(holdingId as string),
+    enabled: Boolean(holdingId),
+  })
+}
+
+/** Whole-portfolio transaction history, grouped by holding id. Used to compute a
+ *  real money-weighted XIRR per holding from its actual SIP dates. */
+export function useAllHoldingTransactions() {
+  const query = useQuery({
+    queryKey: ['holding-transactions', 'all'],
+    queryFn: fetchAllInvestmentTransactions,
+  })
+
+  const byHolding = useMemo(() => {
+    const map = new Map<string, HoldingTransaction[]>()
+    for (const t of query.data ?? []) {
+      const list = map.get(t.holding_id) ?? []
+      list.push(t)
+      map.set(t.holding_id, list)
+    }
+    return map
+  }, [query.data])
+
+    return { ...query, byHolding }
+}
+
+export function usePortfolioHistory(months = 6) {
+  return useQuery({
+    queryKey: ['portfolio-history', months],
+    queryFn: () => fetchPortfolioHistory(months),
   })
 }
 

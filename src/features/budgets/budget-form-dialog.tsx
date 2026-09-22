@@ -18,7 +18,12 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>
 type FormValues = z.output<typeof schema>
 
-export function BudgetFormDialog({ trigger, periodMonth }: { trigger: React.ReactNode; periodMonth: string }) {
+interface BudgetFormDialogProps {
+  trigger: React.ReactNode
+  periodMonth: string
+}
+
+export function BudgetFormDialog({ trigger, periodMonth }: BudgetFormDialogProps) {
   const [open, setOpen] = useState(false)
   const { data: categories } = useCategories()
   const createBudget = useCreateBudget()

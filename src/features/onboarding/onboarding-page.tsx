@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import { useUpdateProfile } from '@/features/settings/hooks'
 import { useCreateAccount } from '@/features/accounts/hooks'
 import { useSmsApiKey, useGenerateSmsApiKey } from '@/features/sms/hooks'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase/client'
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD']
@@ -33,6 +34,27 @@ export function OnboardingPage() {
     { title: 'SMS tracking (optional)', icon: MessageSquare },
     { title: 'Import a statement (optional)', icon: UploadCloud },
   ]
+
+  const queryClient = useQueryClient()
+
+  // Marks onboarding complete in the DB and immediately refreshes the cached
+  // `['onboarded']` flag that RequireAuth reads to decide whether to bounce
+  // back to /onboarding. Without this refresh, the 60s staleTime on the query
+  // leaves the cached `false` in place after we set onboarded_at, so
+  // RequireAuth redirects /dashboard -> /onboarding and the wizard remounts at
+  // step 0 — making it impossible for a new user to ever finish onboarding.
+  const markOnboardingComplete = async () => {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user?.id) throw new Error('No user session')
+    await supabase
+      .from('profiles')
+      .update({ onboarded_at: new Date().toISOString() })
+      .eq('id', userData.user.id)
+    // Optimistically flip the cache so RequireAuth lets /dashboard through right
+    // away, then invalidate to keep it in sync with the DB.
+    queryClient.setQueryData(['onboarded'], true)
+    queryClient.invalidateQueries({ queryKey: ['onboarded'] })
+  }
 
   const handleNext = async () => {
     setError(null)
@@ -74,13 +96,7 @@ export function OnboardingPage() {
       // Final step — mark onboarding complete
       setSaving(true)
       try {
-        const { data: userData } = await supabase.auth.getUser()
-        if (userData.user?.id) {
-          await supabase
-            .from('profiles')
-            .update({ onboarded_at: new Date().toISOString() })
-            .eq('id', userData.user.id)
-        }
+        await markOnboardingComplete()
         navigate('/dashboard', { replace: true })
       } catch (err) {
         setError((err as Error).message)
@@ -90,20 +106,21 @@ export function OnboardingPage() {
     }
   }
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     if (step < 3) {
       setStep(step + 1)
-    } else {
-      // Skip to dashboard
-      supabase.auth.getUser().then(({ data }) => {
-        if (data.user?.id) {
-          supabase
-            .from('profiles')
-            .update({ onboarded_at: new Date().toISOString() })
-            .eq('id', data.user.id)
-            .then(() => navigate('/dashboard', { replace: true }))
-        }
-      })
+      return
+    }
+    // Skip to dashboard
+    setSaving(true)
+    setError(null)
+    try {
+      await markOnboardingComplete()
+      navigate('/dashboard', { replace: true })
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setSaving(false)
     }
   }
 

@@ -21,11 +21,11 @@ export function DialogContent({
       <RadixDialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:animate-out data-[state=closed]:fade-out" />
       <RadixDialog.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2',
-          'surface border border-hairline rounded-xl shadow-2xl shadow-slate-950/15 p-6 dark:shadow-black/40',
+          'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg sm:max-w-md -translate-x-1/2 -translate-y-1/2',
+          'surface border border-hairline rounded-xl shadow-2xl shadow-slate-950/15 p-5 sm:p-6 dark:shadow-black/40',
           'data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:zoom-in-95',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95',
-          'max-h-[90vh] overflow-y-auto',
+          'max-h-[85vh] overflow-y-auto',
           className,
         )}
       >

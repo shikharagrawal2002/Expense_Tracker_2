@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, PiggyBank } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -6,8 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
 import { formatCurrency } from '@/lib/utils'
 import { useBudgetsWithSpend } from '@/features/budgets/hooks'
-import { BudgetCard } from '@/features/budgets/budget-card'
 import { BudgetFormDialog } from '@/features/budgets/budget-form-dialog'
+import { BudgetCard } from '@/features/budgets/budget-card'
 
 function toPeriodMonth(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`
@@ -39,21 +39,21 @@ export function BudgetsPage() {
 
   return (
     <div className="max-w-[1100px] space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-semibold">Budgets</h1>
+          <h1 className="font-display text-xl sm:text-2xl font-semibold">Budgets</h1>
           {budgets && budgets.length > 0 && (
             <p className="text-sm text-muted mt-0.5 num">
               {formatCurrency(totalSpent)} spent of {formatCurrency(totalLimit)} budgeted
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
           <div className="flex items-center gap-1 surface-2 border border-hairline rounded-lg px-1">
             <Button variant="ghost" size="icon" onClick={() => shiftMonth(-1)} aria-label="Previous month">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium px-1 min-w-[130px] text-center">{monthLabel(monthDate)}</span>
+            <span className="text-sm font-medium px-1 min-w-[112px] sm:min-w-[130px] text-center">{monthLabel(monthDate)}</span>
             <Button variant="ghost" size="icon" onClick={() => shiftMonth(1)} aria-label="Next month">
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -61,9 +61,9 @@ export function BudgetsPage() {
           <BudgetFormDialog
             periodMonth={periodMonth}
             trigger={
-              <Button size="sm">
+              <Button size="sm" aria-label="Set budget">
                 <Plus className="h-4 w-4" />
-                Set budget
+                <span className="hidden sm:inline">Set budget</span>
               </Button>
             }
           />
@@ -71,9 +71,9 @@ export function BudgetsPage() {
       </div>
 
       {isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-2xl" />
+            <Skeleton key={i} className="h-40 rounded-2xl" />
           ))}
         </div>
       )}
@@ -95,7 +95,7 @@ export function BudgetsPage() {
       )}
 
       {!isLoading && budgets && budgets.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {budgets.map((b) => (
             <BudgetCard
               key={b.id}

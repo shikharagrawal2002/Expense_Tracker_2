@@ -18,6 +18,12 @@ export interface NewBudget {
   alert_threshold_pct?: number
 }
 
+/** Partial update for an existing budget row. */
+export interface BudgetUpdate {
+  amount_limit?: number
+  alert_threshold_pct?: number
+}
+
 function monthRange(periodMonth: string) {
   const start = new Date(periodMonth + 'T00:00:00')
   const end = new Date(start.getFullYear(), start.getMonth() + 1, 1)
@@ -75,6 +81,13 @@ export async function createBudget(input: NewBudget): Promise<Budget> {
     .single()
   if (error) throw error
   return data as unknown as Budget
+}
+
+/** Updates an existing budget - the pencil button on a budget card calls this so a
+ *  limit or alert threshold can be tuned without deleting and recreating the row. */
+export async function updateBudget(id: string, patch: BudgetUpdate): Promise<void> {
+  const { error } = await supabase.from('budgets').update(patch).eq('id', id)
+  if (error) throw error
 }
 
 export async function deleteBudget(id: string): Promise<void> {
