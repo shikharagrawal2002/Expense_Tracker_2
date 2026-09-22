@@ -245,3 +245,31 @@ export interface ParseStatementResult {
   cardSummary?: CardStatementSummary
   warnings: string[]
 }
+
+// ----------------------------------------------------------------------------
+// Tasks (to-do tracker)
+// ----------------------------------------------------------------------------
+
+export type TaskPriority = 'low' | 'medium' | 'high'
+
+export interface Task {
+  id: string
+  user_id: string
+  title: string
+  notes: string | null
+  /** Calendar day the task is due on ('YYYY-MM-DD'), or null for "someday". */
+  due_date: string | null
+  priority: TaskPriority
+  is_done: boolean
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type NewTask = Pick<Task, 'title'> &
+  Partial<Pick<Task, 'notes' | 'due_date' | 'priority'>>
+
+/** Partial update for an existing task row. */
+export type TaskUpdate = Partial<
+  Pick<Task, 'title' | 'notes' | 'due_date' | 'priority' | 'is_done' | 'completed_at'>
+>

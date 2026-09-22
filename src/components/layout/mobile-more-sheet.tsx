@@ -18,6 +18,7 @@ import {
   Settings,
   BarChart3,
   ArrowLeftRight,
+  ListTodo,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -38,6 +39,7 @@ const SHEET_SECTIONS: Array<{ label: string; items: Array<{ to: string; label: s
   {
     label: 'Planning',
     items: [
+      { to: '/tasks', label: 'Tasks', icon: ListTodo },
       { to: '/budgets', label: 'Budgets', icon: PiggyBank },
       { to: '/goals', label: 'Goals', icon: Target },
       { to: '/subscriptions', label: 'Subscriptions', icon: Repeat },

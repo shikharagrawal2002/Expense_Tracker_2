@@ -110,6 +110,7 @@ finance-tracker/
 /goals/:id
 /subscriptions
 /bills
+/tasks                             # to-do tracker: due dates, priorities, done/pending filters
 /investments
 /debts
 /analytics                         # income vs expense, net worth, heatmap, forecasts

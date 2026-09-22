@@ -11,8 +11,8 @@ of an incrementally-built finance tracker. See `ARCHITECTURE.md` for the full de
 - Dashboard: KPI row, cashflow chart (Recharts), budget ring, upcoming bills,
   recent activity, AI insights panel
 - Full routes + pages: Transactions, Accounts, Categories, Credit Cards, Budgets,
-  Goals, Subscriptions, Bills, Investments, Debts, Splits, SMS Tracking, Imports,
-  Reports, Settings (profile / data / automation)
+  Goals, Subscriptions, Bills, **Tasks** (to-do tracker), Investments, Debts,
+  Splits, SMS Tracking, Imports, Reports, Settings (profile / data / automation)
 - Supabase client + full Postgres schema + RLS policies in `supabase/migrations/`
 - **Phase 3: End-to-end encryption (lib/crypto)**
   - AES-256-GCM field-level encryption via Web Crypto

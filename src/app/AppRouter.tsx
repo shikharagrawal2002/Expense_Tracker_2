@@ -24,6 +24,7 @@ import { AutomationPage } from '@/features/settings/automation-page'
 import { OnboardingPage } from '@/features/onboarding/onboarding-page'
 import { SmsPage } from '@/features/sms/sms-page'
 import { SmsSettingsPage } from '@/features/sms/sms-settings-page'
+import { TasksPage } from '@/features/tasks/tasks-page'
 
 const router = createBrowserRouter(
   [
@@ -48,6 +49,7 @@ const router = createBrowserRouter(
             { path: 'goals', element: <GoalsPage /> },
             { path: 'subscriptions', element: <SubscriptionsPage /> },
             { path: 'bills', element: <BillsPage /> },
+            { path: 'tasks', element: <TasksPage /> },
             { path: 'investments', element: <InvestmentsPage /> },
             { path: 'debts', element: <DebtsPage /> },
             { path: 'analytics', element: <AnalyticsPage /> },

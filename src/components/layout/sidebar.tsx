@@ -18,6 +18,7 @@ import {
   Users,
   CreditCard,
   MessageSquare,
+  ListTodo,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -44,6 +45,7 @@ const NAV_SECTIONS = [
   {
     label: 'Planning',
     items: [
+      { to: '/tasks', label: 'Tasks', icon: ListTodo },
       { to: '/budgets', label: 'Budgets', icon: PiggyBank },
       { to: '/goals', label: 'Goals', icon: Target },
       { to: '/subscriptions', label: 'Subscriptions', icon: Repeat },
